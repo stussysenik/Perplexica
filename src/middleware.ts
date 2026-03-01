@@ -2,11 +2,11 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 async function hashSession(password: string): Promise<string> {
-  const secret = process.env.SESSION_SECRET || 'perplexica-session';
+  const signingKey = process.env.SESSION_SECRET || process.env.AUTH_PASSWORD || 'perplexica-session';
   const encoder = new TextEncoder();
   const key = await crypto.subtle.importKey(
     'raw',
-    encoder.encode(secret),
+    encoder.encode(signingKey),
     { name: 'HMAC', hash: 'SHA-256' },
     false,
     ['sign']
