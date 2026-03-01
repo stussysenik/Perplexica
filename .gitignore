@@ -1,0 +1,15 @@
+node_modules
+dist
+.DS_Store
+server/public
+vite.config.ts.*
+*.tar.gz
+.env.local
+.env
+data/db.sqlite
+data/config.json
+data/uploads/
+.next/
+.local/
+/tmp/
+snippets/
