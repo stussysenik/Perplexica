@@ -102,7 +102,7 @@ class SearchAgent {
       return [];
     });
 
-    let searchPromise: Promise<ResearcherOutput> | null = null;
+    let searchPromise: Promise<ResearcherOutput | null> | null = null;
 
     if (!classification.classification.skipSearch) {
       const researcher = new Researcher();

@@ -160,7 +160,7 @@ class OpenAILLM extends BaseLLM<OpenAIConfig> {
   async generateText(input: GenerateTextInput): Promise<GenerateTextOutput> {
     const params = this.buildCompletionParams(input);
 
-    const response = await this.openAIClient.chat.completions.create(params);
+    const response = await this.openAIClient.chat.completions.create(params as any);
 
     if (response.choices && response.choices.length > 0) {
       const msg = response.choices[0].message as any;
@@ -193,7 +193,7 @@ class OpenAILLM extends BaseLLM<OpenAIConfig> {
   ): AsyncGenerator<StreamTextOutput> {
     const params = this.buildCompletionParams(input, { stream: true });
 
-    const stream = await this.openAIClient.chat.completions.create(params);
+    const stream = await this.openAIClient.chat.completions.create(params as any);
 
     let recievedToolCalls: { name: string; id: string; arguments: string }[] =
       [];
@@ -300,7 +300,7 @@ class OpenAILLM extends BaseLLM<OpenAIConfig> {
       params.max_tokens = maxTokens;
     }
 
-    const response = await this.openAIClient.chat.completions.create(params);
+    const response = await this.openAIClient.chat.completions.create(params as any);
 
     if (response.choices && response.choices.length > 0) {
       try {
@@ -401,7 +401,7 @@ class OpenAILLM extends BaseLLM<OpenAIConfig> {
     }
 
     let recievedObj = '';
-    const stream = await this.openAIClient.chat.completions.create(params);
+    const stream = await this.openAIClient.chat.completions.create(params as any);
 
     for await (const chunk of stream as any) {
       if (chunk.choices && chunk.choices.length > 0) {

@@ -13,6 +13,36 @@ import crypto from 'crypto';
 import { Message } from '@/lib/types';
 import { repairJson } from '@toolsycc/json-repair';
 
+function zodToJsonSchema(schema: z.ZodType): Record<string, any> {
+  if (schema instanceof z.ZodObject) {
+    const shape = schema.shape;
+    const properties: Record<string, any> = {};
+    const required: string[] = [];
+    for (const [key, value] of Object.entries(shape)) {
+      properties[key] = zodToJsonSchema(value as z.ZodType);
+      if (!(value instanceof z.ZodOptional)) {
+        required.push(key);
+      }
+    }
+    return { type: 'object', properties, ...(required.length > 0 ? { required } : {}) };
+  } else if (schema instanceof z.ZodArray) {
+    return { type: 'array', items: zodToJsonSchema(schema.element) };
+  } else if (schema instanceof z.ZodString) {
+    return { type: 'string' };
+  } else if (schema instanceof z.ZodNumber) {
+    return { type: 'number' };
+  } else if (schema instanceof z.ZodBoolean) {
+    return { type: 'boolean' };
+  } else if (schema instanceof z.ZodEnum) {
+    return { type: 'string', enum: schema.options };
+  } else if (schema instanceof z.ZodOptional) {
+    return zodToJsonSchema(schema.unwrap());
+  } else if (schema instanceof z.ZodNullable) {
+    return zodToJsonSchema(schema.unwrap());
+  }
+  return { type: 'string' };
+}
+
 type OllamaConfig = {
   baseURL: string;
   model: string;
@@ -75,7 +105,7 @@ class OllamaLLM extends BaseLLM<OllamaConfig> {
         function: {
           name: tool.name,
           description: tool.description,
-          parameters: z.toJSONSchema(tool.schema).properties,
+          parameters: zodToJsonSchema(tool.schema).properties,
         },
       });
     });
@@ -129,7 +159,7 @@ class OllamaLLM extends BaseLLM<OllamaConfig> {
         function: {
           name: tool.name,
           description: tool.description,
-          parameters: z.toJSONSchema(tool.schema) as any,
+          parameters: zodToJsonSchema(tool.schema) as any,
         },
       });
     });
@@ -185,7 +215,7 @@ class OllamaLLM extends BaseLLM<OllamaConfig> {
     const response = await this.ollamaClient.chat({
       model: this.config.model,
       messages: this.convertToOllamaMessages(input.messages),
-      format: z.toJSONSchema(input.schema),
+      format: zodToJsonSchema(input.schema),
       ...(reasoningModels.find((m) => this.config.model.includes(m))
         ? { think: false }
         : {}),
@@ -224,7 +254,7 @@ class OllamaLLM extends BaseLLM<OllamaConfig> {
     const stream = await this.ollamaClient.chat({
       model: this.config.model,
       messages: this.convertToOllamaMessages(input.messages),
-      format: z.toJSONSchema(input.schema),
+      format: zodToJsonSchema(input.schema),
       stream: true,
       ...(reasoningModels.find((m) => this.config.model.includes(m))
         ? { think: false }

@@ -83,6 +83,36 @@ function fetchJSON(url, headers = {}) {
   });
 }
 
+async function searchBraveNews(query, count = 20) {
+  const results = [];
+  try {
+    const data = await rateLimited(() =>
+      fetchJSON(
+        `https://api.search.brave.com/res/v1/news/search?q=${encodeURIComponent(query)}&count=${count}&text_decorations=false&search_lang=en`,
+        { 'X-Subscription-Token': BRAVE_API_KEY }
+      )
+    );
+
+    const newsResults = data.results || [];
+    for (const r of newsResults) {
+      results.push({
+        url: r.url,
+        title: r.title || '',
+        content: r.description || r.title || '',
+        thumbnail: r.thumbnail?.src || r.meta_url?.favicon || '',
+        img_src: r.thumbnail?.src || '',
+        thumbnail_src: r.thumbnail?.src || '',
+        author: r.meta_url?.hostname || '',
+        engine: 'brave_api_news',
+        category: 'news',
+      });
+    }
+  } catch (err) {
+    console.error('[SearxNG Proxy] Brave News API error:', err.message);
+  }
+  return results;
+}
+
 async function searchBrave(query, count = 10) {
   const results = [];
   try {
@@ -99,6 +129,9 @@ async function searchBrave(query, count = 10) {
         url: r.url,
         title: r.title || '',
         content: r.description || r.title || '',
+        thumbnail: r.thumbnail?.src || '',
+        img_src: r.thumbnail?.src || '',
+        thumbnail_src: r.thumbnail?.src || '',
         engine: 'brave_api',
         category: 'general',
       });
@@ -111,6 +144,9 @@ async function searchBrave(query, count = 10) {
             url: r.url,
             title: r.title || '',
             content: r.description || r.title || '',
+            thumbnail: r.thumbnail?.src || '',
+            img_src: r.thumbnail?.src || '',
+            thumbnail_src: r.thumbnail?.src || '',
             engine: 'brave_api_news',
             category: 'news',
           });
@@ -138,6 +174,7 @@ const server = http.createServer(async (req, res) => {
 
   if (url.pathname === '/search') {
     const query = url.searchParams.get('q') || '';
+    const engines = url.searchParams.get('engines') || '';
 
     if (!query) {
       res.writeHead(400, { 'Content-Type': 'application/json' });
@@ -145,10 +182,13 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
-    console.log(`[SearxNG Proxy] Search: "${query}" (queue: ${requestQueue.length})`);
+    const isNewsSearch = engines.toLowerCase().includes('news');
+    console.log(`[SearxNG Proxy] ${isNewsSearch ? 'News' : 'Web'} search: "${query}" (queue: ${requestQueue.length})`);
 
     try {
-      const results = await searchBrave(query);
+      const results = isNewsSearch
+        ? await searchBraveNews(query)
+        : await searchBrave(query);
       console.log(`[SearxNG Proxy] Got ${results.length} results`);
 
       const response = {

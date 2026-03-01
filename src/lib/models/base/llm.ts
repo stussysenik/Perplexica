@@ -13,8 +13,8 @@ abstract class BaseLLM<CONFIG> {
   abstract streamText(
     input: GenerateTextInput,
   ): AsyncGenerator<StreamTextOutput>;
-  abstract generateObject<T>(input: GenerateObjectInput): Promise<z.infer<T>>;
-  abstract streamObject<T>(
+  abstract generateObject<T extends z.ZodType>(input: GenerateObjectInput): Promise<z.infer<T>>;
+  abstract streamObject<T extends z.ZodType>(
     input: GenerateObjectInput,
   ): AsyncGenerator<Partial<z.infer<T>>>;
 }
