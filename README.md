@@ -1,12 +1,24 @@
-# Perplexica — AI-Powered Search Engine
+<div align="center">
 
-A self-hosted, privacy-focused alternative to Perplexity AI. Perplexica connects to the internet via the Brave Search API and uses NVIDIA NIM large language models to deliver cited, source-traceable answers.
+# Perplexica
 
-**Live Demo**: [Perplexica on Replit](https://297bec06-8881-4546-810f-ddbda301226f-00-mrl12c9cfatp.riker.replit.dev)
+### AI-Powered Search Engine
 
-> Based on [ItzCrazyKns/Perplexica](https://github.com/ItzCrazyKns/Perplexica), adapted for Replit deployment without Docker.
+[![Language](https://img.shields.io/github/languages/top/stussysenik/Perplexica?style=flat-square)]()
+[![License](https://img.shields.io/github/license/stussysenik/Perplexica?style=flat-square)]()
+[![Last Commit](https://img.shields.io/github/last-commit/stussysenik/Perplexica?style=flat-square)]()
+[![Stars](https://img.shields.io/github/stars/stussysenik/Perplexica?style=flat-square)]()
+[![Repo Size](https://img.shields.io/github/repo-size/stussysenik/Perplexica?style=flat-square)]()
+
+[Live Demo](https://297bec06-8881-4546-810f-ddbda301226f-00-mrl12c9cfatp.riker.replit.dev)
+
+</div>
 
 ---
+
+A self-hosted, privacy-focused alternative to Perplexity AI. Connects to the internet via Brave Search API and uses NVIDIA NIM large language models to deliver cited, source-traceable answers.
+
+> Based on [ItzCrazyKns/Perplexica](https://github.com/ItzCrazyKns/Perplexica), adapted for Replit deployment without Docker.
 
 ## Features
 
