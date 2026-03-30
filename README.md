@@ -10,6 +10,8 @@
 [![Stars](https://img.shields.io/github/stars/stussysenik/Perplexica?style=flat-square)]()
 [![Repo Size](https://img.shields.io/github/repo-size/stussysenik/Perplexica?style=flat-square)]()
 
+[Live Demo](https://perplexica-search.fly.dev/index.html)
+
 </div>
 
 ---
