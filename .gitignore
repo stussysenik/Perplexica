@@ -13,3 +13,27 @@ data/uploads/
 .local/
 /tmp/
 snippets/
+
+# Phoenix
+phoenix/_build/
+phoenix/deps/
+phoenix/.env.local
+phoenix/cover/
+phoenix/doc/
+phoenix/erl_crash.dump
+
+# Redwood
+redwood/node_modules/
+redwood/.redwood/
+redwood/web/dist/
+redwood/api/dist/
+redwood/.env
+redwood/.yarn/
+
+# Zig
+zig/zig-out/
+zig/.zig-cache/
+
+# Mise
+.mise.toml
+mise.toml

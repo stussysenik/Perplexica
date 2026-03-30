@@ -1,0 +1,6 @@
+{
+  "buildCommand": "yarn rw deploy vercel",
+  "outputDirectory": "web/dist",
+  "framework": "redwoodjs",
+  "installCommand": "yarn install"
+}

@@ -1,94 +1,129 @@
-# Perplexica on Replit — Development Progress
+# Perplexica — Development Progress
 
 ## Project Goal
 
-Set up the full Perplexica AI-powered search engine on Replit without Docker, integrated with NVIDIA NIM (primary) and Brave Search API, with password-protected deployment and source traceability.
+AI-powered search engine with source traceability, rewritten from Next.js to a resilient multi-service architecture: RedwoodJS (frontend) + Elixir/Phoenix (backend) + PostgreSQL + NVIDIA NIM.
 
 ---
 
 ## Completed Work
 
-### Phase 1: Initial Setup & NVIDIA NIM Integration
+### Phase 1-7: Original Next.js Implementation (Replit)
 
-- Forked Perplexica codebase and adapted for Replit (no Docker)
-- Configured NVIDIA NIM as primary AI provider via OpenAI-compatible API
-- Added multiple NIM models: Kimi K2 Instruct (default), Llama 3.3 70B, DeepSeek V3.2, Qwen 3.5 397B, Llama 3.1 405B, Mistral Large 3 675B
-- Modified `openaiLLM.ts` for non-OpenAI provider compatibility:
-  - Standard `chat.completions.create` instead of `parse()` with structured outputs
-  - Streaming chat completions instead of `responses.stream()`
-  - `max_tokens` instead of `max_completion_tokens`
-  - Manual Zod-to-description conversion for Zod v3 compatibility
-  - 120s timeout for slower models
-- Configured NV EmbedQA E5 v5 embeddings with asymmetric `input_type` support
-- Added GLM (Zhipu AI) as secondary provider
+- Forked Perplexica codebase, adapted for Replit (no Docker)
+- NVIDIA NIM integration with 6 models
+- Brave Search API proxy with rate limiting
+- Source traceability (collapsible extracted text)
+- Password auth (HMAC-SHA256)
+- Weather widget, PWA support
+- **Known issue**: Replit deployment auto-dies (process sleeping, build timeouts)
 
-### Phase 2: Brave Search API Integration
+### Phase 8: Full-Stack Rewrite — RedwoodJS + Elixir/Phoenix
 
-- Replaced SearxNG HTML scraping with official Brave Search API
-- Built custom `searxng-proxy.mjs` — SearxNG-compatible proxy returning structured JSON
-- Added 1 req/sec rate-limiting queue for Brave free tier (2000 queries/month)
-- Verified end-to-end: 19 sources, correct answers, ~21 seconds per query
-- All search modes (Web, Academic, Social, YouTube) route through the Brave proxy
+#### 8.0: Foundation
+- Monorepo structure: `phoenix/`, `redwood/`, `zig/`, `openspec/`
+- RedwoodJS 8.9 scaffolded with TypeScript, Tailwind, Radix UI, Lucide icons
+- Phoenix 1.8 scaffolded (API-only) with Absinthe, Hammer, Sentry, pgvector
+- Zig 0.15 placeholder (builds and runs)
+- PostgreSQL 17 with 9 tables + pgvector 0.8 extension
+- Prisma synced from Ecto migrations (dual ORM)
 
-### Phase 3: Source Traceability
+#### 8.1: AI Provider System
+- `ModelRegistry` GenServer with supervision
+- NVIDIA NIM provider: chat completions, streaming (SSE), structured output (JSON injection), embeddings (1024-dim, asymmetric input_type)
+- Zhipu GLM provider: chat completions, streaming, balance error fallback to free tier
+- Automatic failover: NIM → GLM on 429/500/timeout
+- Circuit breaker: 3 failures → 60s cooldown → half-open recovery
+- Health check timer (60s interval)
 
-- Added collapsible "View extracted text" panel on every source card in `MessageSources.tsx`
-- Each source shows the exact snippet/content extracted from the website and fed to the AI
-- Provides full information flow visibility: source URL → extracted text → AI answer with citations
-- Users can now verify and trace how the AI formed its response
+#### 8.2: Search Pipeline
+- Brave Search client with Hammer v7 rate limiting (1 req/1.1s)
+- Web search, news search, URL scraping, discover news (topic-based)
+- Query classifier via LLM structured output
+- Action registry: web_search, academic_search, discussion_search, scrape_url, done
+- Agentic researcher loop: speed (2 iter), balanced (6), quality (25)
+- Parallel action execution with Task.async_stream
 
-### Phase 4: Authentication
+#### 8.3: Search Session Management
+- `SearchSession` GenServer (one per active search, supervised)
+- `SearchSupervisor` DynamicSupervisor for crash isolation
+- Block emission via Phoenix.PubSub: research, source, text, widget blocks
+- Message persistence to PostgreSQL (status lifecycle: answering → completed | error)
+- 30-minute TTL cleanup
 
-- Added basic password auth via Next.js middleware (`src/middleware.ts`)
-- Login page at `/login` with clean UI matching Perplexica's design
-- HMAC-SHA256 session tokens using Web Crypto API (Edge Runtime compatible)
-- 30-day cookie expiry, `httpOnly` + `secure` + `sameSite` flags
-- `AUTH_PASSWORD` stored as Replit Secret, `SESSION_SECRET` for signing
-- Static assets (icons, weather icons, fonts) excluded from auth
+#### 8.4: GraphQL API (Absinthe)
+- Schema: queries (chats, chat, messages, providers, discover, health)
+- Mutations: startSearch, deleteChat
+- Subscriptions: searchUpdated (WebSocket via Absinthe.Phoenix)
+- Resolvers: search, chat, provider
+- CORS enabled for cross-origin requests
+- GraphiQL playground at `/api/graphiql`
+- Health endpoint at `/health` (Railway monitoring)
 
-### Phase 5: Weather Widget Fix
+#### 8.5: Redwood Frontend
+- `HomePage` with search input, mode selector (speed/balanced/quality), suggestion cards
+- `MessageBox` with Perplexity-style citation badges [1][2], markdown rendering
+- `Sources` component: numbered cards, favicons, domain names, collapsible extracted text
+- `DiscoverPage`: topic pills, news article grid with thumbnails
+- `LibraryPage`: chat history list with delete, relative timestamps
+- `AppLayout`: sidebar navigation (Search, Discover, Library), light/dark toggle
+- `useSearch` hook: query → Phoenix GraphQL → poll for results → render
+- `ThemeProvider`: localStorage persistence, system preference detection
+- Tailwind CSS with Typography plugin, Montserrat font
+- Light mode: warm stone tones (#FAFAF9 bg, cyan accents)
+- Dark mode: deep stone (#0C0A09 bg, cyan-300 accents)
 
-- Fixed geolocation provider: switched from ipwhois.app to ip-api.com as fallback
-- Fixed weather API route switch statement fallthrough bugs
-- Weather widget now shows current conditions on the home screen
-- Uses Open-Meteo (free, no API key required)
-
-### Phase 6: PWA Support
-
-- Updated `manifest.ts` with full PWA configuration (standalone, portrait, categories)
-- Generated icon sizes: 180x180 (Apple), 192x192 (PWA standard), 512x512 (splash)
-- Added `apple-mobile-web-app-capable` and `apple-mobile-web-app-status-bar-style` meta tags
-- Added apple-touch-icon link for iOS home screen icon
-- Configured viewport meta with `viewport-fit: cover` for edge-to-edge display
-- Dynamic theme color (light/dark) based on system preference
-- Updated middleware to allow manifest and icon files through auth
-
-### Phase 7: Deployment Configuration
-
-- Created `start.sh` to run both SearxNG proxy and Next.js together
-- Configured VM deployment target (persistent proxy process + SQLite)
-- Dev server deployment (`npx next dev --webpack -p 5000`) — `next build` times out on Replit
+#### 8.6: Deployment Configuration
+- Phoenix Dockerfile (multi-stage: builder → runner, Debian bookworm)
+- `railway.json` with health check config
+- `rel/overlays/bin/server` and `bin/migrate` release scripts
+- `vercel.json` for Redwood deployment
+- Node 20 pinned via mise for Redwood compatibility
 
 ---
 
-## Known Limitations
+## Test Results (All Passing)
 
-1. **`next build` times out on Replit** — Using dev server for deployment instead of production build
-2. **GLM provider has insufficient balance** — Kept as secondary, NVIDIA NIM is primary
-3. **WolframAlpha widget** — Requires separate API key (not configured)
-4. **Brave Search free tier** — Limited to 2000 queries/month, rate-limited to 1 req/sec
-5. **Initial compilation** — First page load takes ~8-23s (webpack compilation), subsequent loads are fast
-6. **Next.js 16 deprecation warning** — "middleware" convention deprecated in favor of "proxy" (non-breaking)
+| Component | Status | Details |
+|-----------|--------|---------|
+| Health check | PASS | `{"status":"ok","db":"connected"}` |
+| GraphQL providers | PASS | NIM: 6 chat + 1 embedding model, healthy |
+| Brave Web Search | PASS | 5 results for test query |
+| NIM Chat Completion | PASS | Correct response, 2 tokens |
+| NIM Embeddings | PASS | 2 x 1024-dim vectors |
+| Query Classifier | PASS | Weather widget detected, query reformulated |
+| Full E2E Pipeline | PASS | 14 sources → cited answer → DB persist |
+| 3 Concurrent Searches | PASS | All completed, no interference |
+| Discover (3 topics) | PASS | Tech: 5, Sports: 5 articles |
+| Library CRUD | PASS | List, read, delete chats |
+| CORS | PASS | Redwood → Phoenix cross-origin |
+| Phoenix prod compile | PASS | 0 warnings |
+| Redwood dev server | PASS | Serves on :8910 |
 
 ---
 
-## Environment Variables Required
+## Environment Variables
 
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `NVIDIA_NIM_API_KEY` | Yes | NVIDIA NIM API key for LLM and embeddings |
-| `BRAVE_SEARCH_API_KEY` | Yes | Brave Search API key for web search |
-| `AUTH_PASSWORD` | Optional | Password for basic auth (if not set, no auth) |
-| `SESSION_SECRET` | Optional | HMAC signing key for session cookies |
-| `GLM_API_KEY` | Optional | Zhipu AI (GLM) API key for secondary provider |
-| `SEARXNG_API_URL` | Set | Always `http://localhost:4000` (local proxy) |
+| Variable | Service | Required | Description |
+|----------|---------|----------|-------------|
+| `NVIDIA_NIM_API_KEY` | Phoenix | Yes | NVIDIA NIM API key |
+| `BRAVE_SEARCH_API_KEY` | Phoenix | Yes | Brave Search API key |
+| `GLM_API_KEY` | Phoenix | Optional | Zhipu AI GLM API key (failover) |
+| `DATABASE_URL` | Both | Prod only | PostgreSQL connection string |
+| `SECRET_KEY_BASE` | Phoenix | Prod only | Phoenix session signing |
+| `PHX_HOST` | Phoenix | Prod only | Production hostname |
+| `PHX_SERVER` | Phoenix | Prod only | Set to `true` for release |
+| `PHOENIX_URL` | Redwood | Yes | Phoenix backend URL |
+
+---
+
+## Remaining Work
+
+| Item | Priority | Notes |
+|------|----------|-------|
+| File upload processing | Medium | PDF/DOCX/TXT → pgvector chunks |
+| WebSocket streaming | Medium | Replace polling with Absinthe subscriptions |
+| PostHog + Sentry | Low | Observability integration |
+| Zig HTML parser | Low | Benchmark Floki first, only if needed |
+| PWA manifest | Low | Icons, service worker in Redwood |
+| dbAuth | Low | Redwood auth integration |

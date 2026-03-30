@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>Perplexica</title>
+  <style>
+    :root {
+      --bg: #FAFAF9;
+      --bg-secondary: #F5F5F4;
+      --bg-tertiary: #E7E5E4;
+      --text: #1C1917;
+      --text-secondary: #57534E;
+      --text-tertiary: #A8A29E;
+      --accent: #0891B2;
+      --accent-light: #E0F7FA;
+      --border: #E7E5E4;
+      --shadow: rgba(0,0,0,0.04);
+      --card: #FFFFFF;
+      --source-bg: #F0FDFA;
+      --source-border: #99F6E4;
+      --error: #DC2626;
+      --radius: 16px;
+    }
+
+    [data-theme="dark"] {
+      --bg: #0C0A09;
+      --bg-secondary: #1C1917;
+      --bg-tertiary: #292524;
+      --text: #FAFAF9;
+      --text-secondary: #A8A29E;
+      --text-tertiary: #78716C;
+      --accent: #22D3EE;
+      --accent-light: #164E63;
+      --border: #292524;
+      --shadow: rgba(0,0,0,0.2);
+      --card: #1C1917;
+      --source-bg: #042F2E;
+      --source-border: #115E59;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      transition: background 0.3s, color 0.3s;
+    }
+
+    /* ── Header ────────────────────────────────────── */
+    header {
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+      background: var(--card);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .logo {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .logo-icon {
+      width: 28px;
+      height: 28px;
+      background: linear-gradient(135deg, var(--accent), #6366F1);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 14px;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .icon-btn {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 8px;
+      cursor: pointer;
+      color: var(--text-secondary);
+      font-size: 16px;
+      transition: all 0.15s;
+    }
+
+    .icon-btn:hover {
+      background: var(--bg-tertiary);
+      color: var(--text);
+    }
+
+    /* ── Messages ──────────────────────────────────── */
+    .messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      scroll-behavior: smooth;
+    }
+
+    .welcome {
+      text-align: center;
+      padding: 60px 20px;
+    }
+
+    .welcome h1 {
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: -1px;
+      margin-bottom: 8px;
+    }
+
+    .welcome p {
+      color: var(--text-secondary);
+      font-size: 15px;
+    }
+
+    .message {
+      max-width: 800px;
+      margin: 0 auto 24px;
+    }
+
+    .message-query {
+      font-size: 20px;
+      font-weight: 600;
+      letter-spacing: -0.3px;
+      margin-bottom: 16px;
+      color: var(--text);
+    }
+
+    .message-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--accent);
+      font-size: 13px;
+      font-weight: 500;
+      margin-bottom: 12px;
+    }
+
+    .spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .sources {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 8px;
+      margin-bottom: 16px;
+      scrollbar-width: none;
+    }
+
+    .sources::-webkit-scrollbar { display: none; }
+
+    .source-card {
+      flex-shrink: 0;
+      background: var(--source-bg);
+      border: 1px solid var(--source-border);
+      border-radius: 12px;
+      padding: 10px 14px;
+      max-width: 220px;
+      text-decoration: none;
+      color: var(--text);
+      transition: transform 0.15s;
+    }
+
+    .source-card:hover { transform: translateY(-2px); }
+
+    .source-title {
+      font-size: 12px;
+      font-weight: 600;
+      line-height: 1.3;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .source-url {
+      font-size: 11px;
+      color: var(--text-tertiary);
+      margin-top: 4px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .answer {
+      font-size: 15px;
+      line-height: 1.7;
+      color: var(--text);
+    }
+
+    .answer h1, .answer h2, .answer h3 {
+      margin: 20px 0 8px;
+      letter-spacing: -0.3px;
+    }
+
+    .answer h1 { font-size: 22px; }
+    .answer h2 { font-size: 18px; }
+    .answer h3 { font-size: 16px; }
+
+    .answer p { margin-bottom: 12px; }
+
+    .answer ul, .answer ol {
+      margin: 8px 0 12px 20px;
+    }
+
+    .answer li { margin-bottom: 4px; }
+
+    .answer code {
+      background: var(--bg-secondary);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 13px;
+      font-family: 'SF Mono', Menlo, monospace;
+    }
+
+    .answer pre {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px;
+      overflow-x: auto;
+      margin: 12px 0;
+    }
+
+    .answer pre code {
+      background: none;
+      padding: 0;
+    }
+
+    .answer table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 12px 0;
+      font-size: 14px;
+    }
+
+    .answer th, .answer td {
+      border: 1px solid var(--border);
+      padding: 8px 12px;
+      text-align: left;
+    }
+
+    .answer th {
+      background: var(--bg-secondary);
+      font-weight: 600;
+    }
+
+    .answer strong { font-weight: 600; }
+
+    .answer a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    .answer a:hover { text-decoration: underline; }
+
+    .answer blockquote {
+      border-left: 3px solid var(--accent);
+      padding-left: 16px;
+      color: var(--text-secondary);
+      margin: 12px 0;
+    }
+
+    .error-msg {
+      background: #FEF2F2;
+      border: 1px solid #FECACA;
+      color: var(--error);
+      padding: 12px 16px;
+      border-radius: 10px;
+      font-size: 14px;
+    }
+
+    [data-theme="dark"] .error-msg {
+      background: #1C1111;
+      border-color: #7F1D1D;
+    }
+
+    /* ── Input ─────────────────────────────────────── */
+    .input-area {
+      padding: 12px 20px 24px;
+      background: var(--card);
+      border-top: 1px solid var(--border);
+    }
+
+    .input-wrap {
+      max-width: 800px;
+      margin: 0 auto;
+      display: flex;
+      gap: 8px;
+      align-items: flex-end;
+    }
+
+    .input-field {
+      flex: 1;
+      background: var(--bg-secondary);
+      border: 1.5px solid var(--border);
+      border-radius: 14px;
+      padding: 12px 16px;
+      font-size: 15px;
+      color: var(--text);
+      font-family: inherit;
+      resize: none;
+      min-height: 48px;
+      max-height: 160px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .input-field:focus {
+      border-color: var(--accent);
+    }
+
+    .input-field::placeholder {
+      color: var(--text-tertiary);
+    }
+
+    .send-btn {
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 14px;
+      width: 48px;
+      height: 48px;
+      cursor: pointer;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.15s;
+      flex-shrink: 0;
+    }
+
+    .send-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .send-btn:not(:disabled):hover {
+      opacity: 0.85;
+    }
+
+    /* ── Mode selector ─────────────────────────────── */
+    .mode-bar {
+      max-width: 800px;
+      margin: 0 auto 8px;
+      display: flex;
+      gap: 6px;
+    }
+
+    .mode-pill {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 4px 10px;
+      font-size: 12px;
+      cursor: pointer;
+      color: var(--text-secondary);
+      transition: all 0.15s;
+    }
+
+    .mode-pill.active {
+      background: var(--accent-light);
+      border-color: var(--accent);
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    /* ── Mobile ────────────────────────────────────── */
+    @media (max-width: 640px) {
+      .messages { padding: 16px; }
+      .welcome h1 { font-size: 22px; }
+      .message-query { font-size: 17px; }
+      .answer { font-size: 14px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="logo">
+      <div class="logo-icon">P</div>
+      Perplexica
+    </div>
+    <div class="header-actions">
+      <button class="icon-btn" onclick="toggleTheme()" title="Toggle theme">◐</button>
+      <button class="icon-btn" onclick="clearChat()" title="New chat">+</button>
+    </div>
+  </header>
+
+  <div class="messages" id="messages">
+    <div class="welcome" id="welcome">
+      <h1>What do you want to know?</h1>
+      <p>Search the web with AI-powered research</p>
+    </div>
+  </div>
+
+  <div class="input-area">
+    <div class="mode-bar">
+      <button class="mode-pill active" data-mode="speed" onclick="setMode(this)">⚡ Speed</button>
+      <button class="mode-pill" data-mode="balanced" onclick="setMode(this)">⚖️ Balanced</button>
+      <button class="mode-pill" data-mode="quality" onclick="setMode(this)">🎯 Quality</button>
+    </div>
+    <div class="input-wrap">
+      <textarea class="input-field" id="input" placeholder="Ask anything..." rows="1"
+        onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+      <button class="send-btn" id="sendBtn" onclick="sendQuery()">↑</button>
+    </div>
+  </div>
+
+  <script>
+    const API = '/api/graphql';
+    let mode = 'speed';
+    let searching = false;
+    let chatId = crypto.randomUUID();
+
+    // Theme
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    if (prefersDark) document.documentElement.setAttribute('data-theme', 'dark');
+
+    function toggleTheme() {
+      const current = document.documentElement.getAttribute('data-theme');
+      document.documentElement.setAttribute('data-theme', current === 'dark' ? '' : 'dark');
+    }
+
+    function setMode(el) {
+      document.querySelectorAll('.mode-pill').forEach(p => p.classList.remove('active'));
+      el.classList.add('active');
+      mode = el.dataset.mode;
+    }
+
+    function autoResize(el) {
+      el.style.height = 'auto';
+      el.style.height = Math.min(el.scrollHeight, 160) + 'px';
+    }
+
+    function handleKey(e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendQuery();
+      }
+    }
+
+    function clearChat() {
+      chatId = crypto.randomUUID();
+      document.getElementById('messages').innerHTML = `
+        <div class="welcome" id="welcome">
+          <h1>What do you want to know?</h1>
+          <p>Search the web with AI-powered research</p>
+        </div>`;
+      searching = false;
+      document.getElementById('sendBtn').disabled = false;
+    }
+
+    async function sendQuery() {
+      const input = document.getElementById('input');
+      const query = input.value.trim();
+      if (!query || searching) return;
+
+      searching = true;
+      document.getElementById('sendBtn').disabled = true;
+      input.value = '';
+      input.style.height = 'auto';
+
+      // Remove welcome
+      const welcome = document.getElementById('welcome');
+      if (welcome) welcome.remove();
+
+      const msgId = crypto.randomUUID();
+      const container = document.getElementById('messages');
+
+      // Add message
+      const msgEl = document.createElement('div');
+      msgEl.className = 'message';
+      msgEl.innerHTML = `
+        <div class="message-query">${escapeHtml(query)}</div>
+        <div class="message-status" id="status-${msgId}">
+          <div class="spinner"></div>
+          <span>Searching...</span>
+        </div>
+        <div class="sources" id="sources-${msgId}"></div>
+        <div class="answer" id="answer-${msgId}"></div>
+      `;
+      container.appendChild(msgEl);
+      container.scrollTop = container.scrollHeight;
+
+      try {
+        // Start search
+        const mutation = `mutation {
+          startSearch(
+            query: ${JSON.stringify(query)},
+            chatId: ${JSON.stringify(chatId)},
+            messageId: ${JSON.stringify(msgId)},
+            optimizationMode: ${JSON.stringify(mode)}
+          ) { sessionId status }
+        }`;
+
+        const res = await gql(mutation);
+        const sessionId = res.data.startSearch.sessionId;
+
+        // Poll for results (since we don't have WebSocket subscription in this simple UI)
+        updateStatus(msgId, 'Researching with AI...');
+        await pollForAnswer(msgId, 30);
+
+      } catch (err) {
+        document.getElementById(`answer-${msgId}`).innerHTML =
+          `<div class="error-msg">Error: ${escapeHtml(err.message)}</div>`;
+        updateStatus(msgId, 'Failed');
+      }
+
+      searching = false;
+      document.getElementById('sendBtn').disabled = false;
+    }
+
+    async function pollForAnswer(msgId, maxAttempts) {
+      for (let i = 0; i < maxAttempts; i++) {
+        await sleep(2000);
+
+        try {
+          const res = await gql(`{
+            messages(chatId: ${JSON.stringify(chatId)}) {
+              messageId status responseBlocks
+            }
+          }`);
+
+          const msg = res.data.messages.find(m => m.messageId === msgId);
+          if (!msg) continue;
+
+          if (msg.status === 'completed' && msg.responseBlocks) {
+            const blocks = msg.responseBlocks;
+
+            // Render sources
+            const sourceBlock = blocks.find(b => b.type === 'source');
+            if (sourceBlock && sourceBlock.data) {
+              renderSources(msgId, sourceBlock.data);
+            }
+
+            // Render answer
+            const textBlock = blocks.find(b => b.type === 'text');
+            if (textBlock) {
+              document.getElementById(`answer-${msgId}`).innerHTML = renderMarkdown(textBlock.data);
+            }
+
+            updateStatus(msgId, null);
+            document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
+            return;
+          }
+
+          if (msg.status === 'error') {
+            document.getElementById(`answer-${msgId}`).innerHTML =
+              `<div class="error-msg">Search encountered an error. Please try again.</div>`;
+            updateStatus(msgId, null);
+            return;
+          }
+
+          // Still answering
+          if (i > 3) updateStatus(msgId, 'Generating answer...');
+          if (i > 8) updateStatus(msgId, 'Almost done...');
+
+        } catch (e) {
+          // Polling error, continue
+        }
+      }
+
+      updateStatus(msgId, null);
+      document.getElementById(`answer-${msgId}`).innerHTML =
+        `<div class="error-msg">Search is taking longer than expected. Please try again.</div>`;
+    }
+
+    function renderSources(msgId, sources) {
+      const el = document.getElementById(`sources-${msgId}`);
+      el.innerHTML = sources.slice(0, 8).map(s => {
+        const url = s.metadata?.url || '';
+        const title = s.metadata?.title || url;
+        const hostname = url ? new URL(url).hostname.replace('www.', '') : '';
+        return `<a class="source-card" href="${escapeHtml(url)}" target="_blank" rel="noopener">
+          <div class="source-title">${escapeHtml(title)}</div>
+          <div class="source-url">${escapeHtml(hostname)}</div>
+        </a>`;
+      }).join('');
+    }
+
+    function updateStatus(msgId, text) {
+      const el = document.getElementById(`status-${msgId}`);
+      if (!text) {
+        el.style.display = 'none';
+      } else {
+        el.innerHTML = `<div class="spinner"></div><span>${text}</span>`;
+      }
+    }
+
+    function renderMarkdown(text) {
+      if (!text) return '';
+      return text
+        // Code blocks
+        .replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>')
+        // Inline code
+        .replace(/`([^`]+)`/g, '<code>$1</code>')
+        // Headers
+        .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+        .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+        .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+        // Bold
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+        // Italic
+        .replace(/\*(.+?)\*/g, '<em>$1</em>')
+        // Links
+        .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>')
+        // Tables
+        .replace(/^\|(.+)\|$/gm, (match) => {
+          const cells = match.split('|').filter(c => c.trim());
+          if (cells.every(c => /^[\s-:]+$/.test(c))) return '';
+          const tag = match.includes('---') ? 'th' : 'td';
+          return '<tr>' + cells.map(c => `<${tag}>${c.trim()}</${tag}>`).join('') + '</tr>';
+        })
+        .replace(/(<tr>[\s\S]*?<\/tr>\n?)+/g, '<table>$&</table>')
+        // Lists
+        .replace(/^- (.+)$/gm, '<li>$1</li>')
+        .replace(/^(\d+)\. (.+)$/gm, '<li>$2</li>')
+        .replace(/(<li>[\s\S]*?<\/li>\n?)+/g, '<ul>$&</ul>')
+        // Blockquotes
+        .replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>')
+        // Paragraphs
+        .replace(/\n\n/g, '</p><p>')
+        .replace(/^(?!<[hupoltb])(.+)$/gm, '<p>$1</p>')
+        // Clean up
+        .replace(/<p><\/p>/g, '')
+        .replace(/<\/p>\s*<p>/g, '</p><p>');
+    }
+
+    function escapeHtml(str) {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    async function gql(query) {
+      const res = await fetch(API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query })
+      });
+      const data = await res.json();
+      if (data.errors) throw new Error(data.errors[0].message);
+      return data;
+    }
+
+    function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+    // Focus input
+    document.getElementById('input').focus();
+  </script>
+</body>
+</html>

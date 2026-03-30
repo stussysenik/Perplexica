@@ -1,0 +1,120 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+  binaryTargets   = ["native"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Chat {
+  id             String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title          String
+  sources        Json            @default("[]")
+  files          Json            @default("[]")
+  createdAt      DateTime        @map("inserted_at") @db.Timestamp(6)
+  updatedAt      DateTime        @updatedAt @map("updated_at") @db.Timestamp(6)
+  messages       Message[]
+  searchSessions SearchSession[]
+
+  @@map("chats")
+}
+
+model Message {
+  id             BigInt   @id @default(autoincrement())
+  messageId      String   @map("message_id")
+  chatId         String   @map("chat_id") @db.Uuid
+  backendId      String   @map("backend_id")
+  query          String
+  responseBlocks Json?    @default("[]") @map("response_blocks")
+  status         String   @default("answering")
+  createdAt      DateTime @map("inserted_at") @db.Timestamp(6)
+  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamp(6)
+  chat           Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([chatId], map: "messages_chat_id_index")
+  @@index([messageId], map: "messages_message_id_index")
+  @@map("messages")
+}
+
+model SearchSession {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  chatId    String?  @map("chat_id") @db.Uuid
+  messageId String   @map("message_id")
+  state     Json     @default("{}")
+  iteration Int      @default(0)
+  status    String   @default("active")
+  createdAt DateTime @map("inserted_at") @db.Timestamp(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamp(6)
+  chat      Chat?    @relation(fields: [chatId], references: [id], onUpdate: NoAction)
+
+  @@index([chatId], map: "search_sessions_chat_id_index")
+  @@map("search_sessions")
+}
+
+model Config {
+  key       String   @id
+  value     Json
+  createdAt DateTime @map("inserted_at") @db.Timestamp(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamp(6)
+
+  @@map("config")
+}
+
+model ModelProvider {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name            String
+  type            String
+  config          Json     @default("{}")
+  chatModels      Json     @default("[]") @map("chat_models")
+  embeddingModels Json     @default("[]") @map("embedding_models")
+  hash            String   @unique(map: "model_providers_hash_index")
+  createdAt       DateTime @map("inserted_at") @db.Timestamp(6)
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamp(6)
+
+  @@map("model_providers")
+}
+
+model Upload {
+  id         String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name       String
+  mimeType   String        @map("mime_type")
+  sizeBytes  Int           @map("size_bytes")
+  storageKey String        @map("storage_key")
+  createdAt  DateTime      @map("inserted_at") @db.Timestamp(6)
+  updatedAt  DateTime      @updatedAt @map("updated_at") @db.Timestamp(6)
+  chunks     UploadChunk[]
+
+  @@map("uploads")
+}
+
+model UploadChunk {
+  id         BigInt                @id @default(autoincrement())
+  uploadId   String                @map("upload_id") @db.Uuid
+  content    String
+  embedding  Unsupported("vector")
+  chunkIndex Int                   @map("chunk_index")
+  upload     Upload                @relation(fields: [uploadId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([uploadId], map: "upload_chunks_upload_id_index")
+  @@map("upload_chunks")
+}
+
+model User {
+  id                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  passwordHash        String    @map("password_hash")
+  salt                String
+  resetToken          String?   @map("reset_token")
+  resetTokenExpiresAt DateTime? @map("reset_token_expires_at") @db.Timestamp(6)
+  createdAt           DateTime  @map("inserted_at") @db.Timestamp(6)
+  updatedAt           DateTime  @updatedAt @map("updated_at") @db.Timestamp(6)
+
+  @@map("users")
+}
+
+model schema_migrations {
+  version     BigInt    @id
+  inserted_at DateTime? @db.Timestamp(0)
+}

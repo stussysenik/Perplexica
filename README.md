@@ -10,158 +10,177 @@
 [![Stars](https://img.shields.io/github/stars/stussysenik/Perplexica?style=flat-square)]()
 [![Repo Size](https://img.shields.io/github/repo-size/stussysenik/Perplexica?style=flat-square)]()
 
-[Live Demo](https://297bec06-8881-4546-810f-ddbda301226f-00-mrl12c9cfatp.riker.replit.dev)
-
 </div>
 
 ---
 
-A self-hosted, privacy-focused alternative to Perplexity AI. Connects to the internet via Brave Search API and uses NVIDIA NIM large language models to deliver cited, source-traceable answers.
+A self-hosted, privacy-focused alternative to Perplexity AI. Uses an agentic research loop with Brave Search API and NVIDIA NIM large language models to deliver cited, source-traceable answers.
 
-> Based on [ItzCrazyKns/Perplexica](https://github.com/ItzCrazyKns/Perplexica), adapted for Replit deployment without Docker.
+Built with **RedwoodJS** (React frontend) + **Elixir/Phoenix** (fault-tolerant backend) + **PostgreSQL** (persistent data with pgvector embeddings).
+
+> Based on [ItzCrazyKns/Perplexica](https://github.com/ItzCrazyKns/Perplexica), rewritten as a resilient multi-service architecture.
 
 ## Features
 
-- **AI-Powered Web Search** — Ask questions in natural language, get answers with inline citations `[1][2]` linking back to sources
-- **Source Traceability** — Click any source card to see the exact text extracted from that website and fed to the AI. Full transparency on how answers are formed
-- **Multiple Search Modes** — Web, Academic, YouTube, Social/Reddit, Writing, Wolfram Alpha (requires API key)
-- **NVIDIA NIM Models** — Kimi K2 Instruct (default, fast), Llama 3.3 70B, DeepSeek V3.2, Qwen 3.5 397B, and more
-- **Brave Search API** — Structured search results with rich descriptions, rate-limited for free tier (1 req/sec)
-- **Home Widgets** — Weather (Open-Meteo, no API key), Stock prices (Yahoo Finance), Calculator (mathjs)
-- **Password Protection** — Basic auth via environment variable, HMAC-SHA256 signed session cookies
-- **PWA Support** — Install as a native app on iPhone/Android from the browser. Standalone display, proper icons, viewport configuration
-- **Dark Mode** — Full dark theme support with system preference detection
-- **Chat History** — SQLite-backed conversation persistence with sidebar navigation
+- **AI-Powered Web Search** — Ask questions in natural language, get answers with inline citation badges `[1][2]` linking back to sources
+- **Source Traceability** — Collapsible "View extracted text" on every source card. See exactly what the AI read from each website
+- **Agentic Research Loop** — Iterative search: classify query, search web, scrape pages, reason, repeat. Speed (2 iterations), Balanced (6), Quality (25)
+- **Fault-Tolerant Backend** — Each search runs in its own supervised Elixir GenServer. Crashes are isolated — other searches continue unaffected
+- **AI Provider Failover** — NVIDIA NIM (primary) with automatic failover to Zhipu GLM. Circuit breaker opens after 3 failures, recovers after 60s
+- **Brave Search API** — Rate-limited (Hammer, 1 req/s free tier) web + news search with URL scraping
+- **Discover Page** — Topic-based news feed (Tech, Finance, Art, Sports, Entertainment) with card grid
+- **Library** — Chat history with delete, powered by PostgreSQL
+- **Light & Dark Mode** — Polished light theme with warm stone tones, dark mode toggle. Montserrat font
+- **Mobile Responsive** — Sidebar collapses on mobile, works on phone browsers
+- **GraphQL API** — Absinthe schema with queries, mutations, and WebSocket subscriptions
+- **pgvector Embeddings** — 1024-dim NV EmbedQA vectors for uploaded file search
 
 ## Architecture
 
 ```
-┌──────────────────────────────────────────────────────┐
-│                    Next.js App (port 5000)            │
-│  ┌──────────────┐  ┌──────────────┐  ┌────────────┐ │
-│  │ Auth          │  │ Chat UI      │  │ API Routes │ │
-│  │ Middleware     │  │ (React)      │  │ /api/*     │ │
-│  └──────────────┘  └──────────────┘  └────────────┘ │
-│         │                  │                │        │
-│         │           ┌──────────────┐        │        │
-│         │           │ Search Agents│        │        │
-│         │           │ (LLM + RAG) │        │        │
-│         │           └──────┬───────┘        │        │
-│         │                  │                │        │
-│         │     ┌────────────┼──────────┐     │        │
-│         │     │            │          │     │        │
-│  ┌──────┴──┐ ┌┴────────┐ ┌┴───────┐ ┌┴────┴──────┐ │
-│  │ SQLite  │ │ NVIDIA  │ │Brave   │ │ Widgets    │ │
-│  │ (Drizzle│ │ NIM API │ │Search  │ │ Weather/   │ │
-│  │  ORM)   │ │         │ │Proxy   │ │ Stock/Calc │ │
-│  └─────────┘ └─────────┘ │:4000   │ └────────────┘ │
-│                           └────────┘                 │
-└──────────────────────────────────────────────────────┘
+┌─────────────────────┐     ┌──────────────────────────────────┐
+│  RedwoodJS (Vercel)  │     │  Phoenix/Elixir (Railway)        │
+│                      │     │                                  │
+│  React UI            │────▶│  Absinthe GraphQL API            │
+│  Tailwind + Radix    │ GQL │  ┌─────────────────────────┐    │
+│  Apollo Client       │     │  │ SearchSupervisor         │    │
+│                      │     │  │  ├─ SearchSession [GS]   │    │
+│  Pages:              │     │  │  ├─ SearchSession [GS]   │    │
+│  - Search (/)        │     │  │  └─ SearchSession [GS]   │    │
+│  - Discover          │     │  └─────────────────────────┘    │
+│  - Library           │     │  ModelRegistry [GenServer]       │
+└─────────────────────┘     │  ├─ NIM Provider (failover) ────▶ NVIDIA NIM API
+                             │  └─ GLM Provider (fallback) ────▶ Zhipu GLM API
+                             │  BraveSearch [Hammer rate limit] ▶ Brave Search API
+                             │  PostgreSQL + pgvector            │
+                             └──────────────────────────────────┘
 ```
 
 ## Tech Stack
 
 | Layer | Technology |
 |-------|-----------|
-| Framework | Next.js 16 (App Router, webpack) |
-| Database | SQLite via better-sqlite3 + Drizzle ORM |
-| AI Provider | NVIDIA NIM (OpenAI-compatible API) |
-| Search | Brave Search API via custom proxy |
-| Embeddings | NV EmbedQA E5 v5 |
-| Styling | Tailwind CSS + shadcn components |
-| Auth | HMAC-SHA256 session cookies (Edge Runtime compatible) |
+| Frontend | RedwoodJS 8.9, React 18, Tailwind CSS, Montserrat |
+| Backend | Elixir 1.19, Phoenix 1.8, Absinthe GraphQL |
+| Database | PostgreSQL 17 + pgvector 0.8 (Ecto + Prisma) |
+| AI Provider | NVIDIA NIM (OpenAI-compatible) + Zhipu GLM failover |
+| Search | Brave Search API + Hammer rate limiting |
+| Embeddings | NV EmbedQA E5 v5 (1024-dim, asymmetric) |
+| HTML Parser | Zig 0.15 (stretch goal, placeholder) |
 
 ## Setup
 
 ### Prerequisites
 
+- Elixir 1.15+ and Erlang/OTP 26+
+- Node.js 20 (use `mise` or `nvm`)
+- PostgreSQL 14+ with pgvector extension
 - NVIDIA NIM API key ([nvidia.com/nim](https://build.nvidia.com/explore/discover))
 - Brave Search API key ([brave.com/search/api](https://brave.com/search/api/))
-- Node.js 18+
 
 ### Environment Variables
 
-Create a `.env.local` file:
-
+**Phoenix** (`phoenix/.env.local`):
 ```env
-SEARXNG_API_URL=http://localhost:4000
 NVIDIA_NIM_API_KEY=your_nvidia_nim_api_key
 BRAVE_SEARCH_API_KEY=your_brave_search_api_key
+# Optional:
+GLM_API_KEY=your_glm_api_key
+GLM_BASE_URL=https://open.bigmodel.cn/api/paas/v4
 ```
 
-Optional:
+**Redwood** (`redwood/.env`):
 ```env
-AUTH_PASSWORD=your_password          # Enable password protection
-SESSION_SECRET=your_session_secret   # HMAC signing key for sessions
-GLM_API_KEY=your_glm_api_key        # Zhipu AI (GLM) as secondary provider
+DATABASE_URL=postgresql://user@localhost:5432/perplexica_dev
+PHOENIX_URL=http://localhost:4000
 ```
 
 ### Running Locally
 
 ```bash
-# Install dependencies
-npm install
+# 1. Set up database
+createdb perplexica_dev
+psql -d perplexica_dev -c "CREATE EXTENSION IF NOT EXISTS vector;"
 
-# Start the search proxy (must run alongside the app)
-node searxng-proxy.mjs &
+# 2. Start Phoenix backend
+cd phoenix
+mix setup          # Install deps, create DB, run migrations
+mix phx.server     # Starts on :4000
 
-# Start the Next.js app
-npx next dev --webpack -p 5000
+# 3. Start Redwood frontend (separate terminal)
+cd redwood
+yarn install
+yarn rw dev web    # Starts on :8910
 ```
 
-Or use the combined start script:
+Open **http://localhost:8910** to use the app.
+
+### Deploying
+
+**Phoenix → Railway:**
 ```bash
-bash start.sh
+cd phoenix
+# Railway auto-detects the Dockerfile
+# Set env vars: DATABASE_URL, SECRET_KEY_BASE, NVIDIA_NIM_API_KEY, BRAVE_SEARCH_API_KEY, PHX_HOST, PHX_SERVER=true
 ```
 
-### Deploying on Replit
-
-1. Fork this project on Replit
-2. Set the environment variables in Replit Secrets
-3. Both workflows (SearxNG Proxy + Start application) will auto-start
-4. Deploy as VM target (needs persistent proxy process + SQLite)
-
-## PWA Installation (iPhone / Android)
-
-1. Open the deployed URL in Safari (iOS) or Chrome (Android)
-2. Tap **Share** → **Add to Home Screen**
-3. The app will launch in standalone mode — no browser chrome, feels native
-
-## Key Modifications from Upstream
-
-This fork adapts Perplexica for Replit deployment without Docker and adds several enhancements:
-
-- **No Docker dependency** — All services run natively via Node.js
-- **NVIDIA NIM compatibility** — Modified OpenAI provider for non-OpenAI API quirks (streaming, tool calls, max_tokens)
-- **Brave Search API** — Custom SearxNG-compatible proxy with rate limiting queue
-- **Source traceability** — Collapsible extracted text panels on every source card
-- **Password auth** — Edge Runtime compatible HMAC-SHA256 middleware
-- **PWA support** — Full manifest, apple-touch-icon, viewport meta, standalone display
-- **Weather widget fix** — ip-api.com fallback for geolocation
+**Redwood → Vercel:**
+```bash
+cd redwood
+# Connect repo to Vercel, set root directory to "redwood"
+# Set env var: PHOENIX_URL=https://your-railway-app.railway.app
+```
 
 ## Project Structure
 
 ```
-├── src/
-│   ├── app/                    # Next.js App Router
-│   │   ├── api/                # API routes (weather, auth, config, etc.)
-│   │   ├── login/              # Login page
-│   │   └── layout.tsx          # Root layout with PWA meta tags
-│   ├── components/             # React components
-│   │   ├── MessageSources.tsx  # Source cards with traceability
-│   │   ├── WeatherWidget.tsx   # Weather home widget
-│   │   └── Sidebar.tsx         # Navigation sidebar
-│   ├── lib/
-│   │   ├── agents/             # Search agents (web, academic, youtube, etc.)
-│   │   ├── models/             # AI model providers
-│   │   ├── config.ts           # Configuration manager
-│   │   └── db/                 # SQLite + Drizzle ORM
-│   └── middleware.ts           # Auth middleware (Edge Runtime)
-├── searxng-proxy.mjs           # Brave Search API proxy
-├── start.sh                    # Combined startup script
-├── data/                       # Runtime data (SQLite DB, config)
-└── public/                     # Static assets (icons, weather icons)
+perplexica/
+├── phoenix/                    # Elixir/Phoenix backend
+│   ├── lib/perplexica/
+│   │   ├── models/             # AI providers (NIM, GLM, registry, failover)
+│   │   ├── search/             # Search pipeline (classifier, researcher, actions, session)
+│   │   ├── search_sources/     # Brave Search client + rate limiter
+│   │   ├── uploads/            # File processing + pgvector embeddings
+│   │   ├── chat.ex             # Chat Ecto schema
+│   │   └── message.ex          # Message Ecto schema
+│   ├── lib/perplexica_web/
+│   │   ├── schema.ex           # Absinthe GraphQL root schema
+│   │   ├── schema/             # GraphQL type definitions
+│   │   ├── resolvers/          # Query/mutation resolvers
+│   │   └── channels/           # WebSocket for subscriptions
+│   ├── priv/repo/migrations/   # Database migrations (source of truth)
+│   ├── Dockerfile              # Railway deployment
+│   └── railway.json
+├── redwood/                    # RedwoodJS frontend
+│   ├── web/src/
+│   │   ├── pages/              # HomePage, DiscoverPage, LibraryPage
+│   │   ├── components/         # Chat, Sources, MessageBox, MessageInput
+│   │   ├── layouts/            # AppLayout with sidebar
+│   │   └── lib/                # Phoenix client, useSearch hook, theme
+│   ├── api/db/schema.prisma    # Prisma schema (synced from Ecto)
+│   └── vercel.json
+├── zig/                        # Zig HTML parser (stretch goal)
+│   ├── src/main.zig
+│   └── build.zig
+├── openspec/                   # Architecture specs and proposals
+│   └── changes/rewrite-fullstack-resilient/
+└── src/                        # Original Next.js code (reference)
 ```
+
+## Database Schema
+
+9 tables in PostgreSQL:
+
+| Table | Purpose |
+|-------|---------|
+| `chats` | Conversation threads |
+| `messages` | Query-response pairs with JSONB response blocks |
+| `search_sessions` | GenServer state checkpoints for crash recovery |
+| `config` | Application configuration (key-value JSONB) |
+| `model_providers` | AI provider configs (NIM, GLM) |
+| `uploads` | File upload metadata |
+| `upload_chunks` | Embedded text chunks with pgvector(1024) |
+| `users` | Password auth (bcrypt) |
 
 ## License
 
