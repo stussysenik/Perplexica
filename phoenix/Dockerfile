@@ -1,12 +1,5 @@
-ARG ELIXIR_VERSION=1.19.5
-ARG OTP_VERSION=28.3.3
-ARG DEBIAN_VERSION=bookworm-20250113-slim
-
-ARG BUILDER_IMAGE="hexpm/elixir:${ELIXIR_VERSION}-erlang-${OTP_VERSION}-debian-${DEBIAN_VERSION}"
-ARG RUNNER_IMAGE="debian:${DEBIAN_VERSION}"
-
-# ── Build Stage ──────────────────────────────────────────────────────
-FROM ${BUILDER_IMAGE} AS builder
+# Use Elixir official image (stable, multi-arch)
+FROM elixir:1.17-slim AS builder
 
 RUN apt-get update -y && apt-get install -y build-essential git && apt-get clean
 
@@ -24,13 +17,14 @@ RUN mix deps.compile
 
 COPY priv priv
 COPY lib lib
+COPY rel rel
 
 RUN mix compile
 
 RUN mix release
 
 # ── Runtime Stage ────────────────────────────────────────────────────
-FROM ${RUNNER_IMAGE}
+FROM debian:bookworm-slim
 
 RUN apt-get update -y && \
   apt-get install -y libstdc++6 openssl libncurses5 locales ca-certificates && \

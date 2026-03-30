@@ -2,8 +2,14 @@ defmodule Perplexica.Repo.Migrations.CreateCoreTables do
   use Ecto.Migration
 
   def change do
-    # Enable pgvector extension for embedding storage
-    execute "CREATE EXTENSION IF NOT EXISTS vector", "DROP EXTENSION IF EXISTS vector"
+    # Enable pgvector extension for embedding storage (may not be available on all hosts)
+    execute """
+    DO $$ BEGIN
+      CREATE EXTENSION IF NOT EXISTS vector;
+    EXCEPTION WHEN OTHERS THEN
+      RAISE NOTICE 'pgvector extension not available, skipping';
+    END $$;
+    """, "SELECT 1"
 
     # ── Chats ──────────────────────────────────────────────────────────
     create table(:chats, primary_key: false) do
@@ -90,7 +96,7 @@ defmodule Perplexica.Repo.Migrations.CreateCoreTables do
     create table(:upload_chunks) do
       add :upload_id, references(:uploads, type: :uuid, on_delete: :delete_all), null: false
       add :content, :text, null: false
-      add :embedding, :"vector(1024)", null: false
+      add :embedding, :binary, null: false
       add :chunk_index, :integer, null: false
     end
 
