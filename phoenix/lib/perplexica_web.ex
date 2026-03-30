@@ -17,7 +17,7 @@ defmodule PerplexicaWeb do
   those modules here.
   """
 
-  def static_paths, do: ~w(assets fonts images favicon.ico robots.txt index.html)
+  def static_paths, do: ~w(assets fonts images favicon.ico robots.txt index.html manifest.json sw.js icon-180.png icon-192.png icon-512.png)
 
   def router do
     quote do
