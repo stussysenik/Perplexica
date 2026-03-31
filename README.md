@@ -2,6 +2,9 @@
 
 # Perplexica
 
+![Demo](demo.gif)
+
+
 ### AI-Powered Search Engine
 
 [![Language](https://img.shields.io/github/languages/top/stussysenik/Perplexica?style=flat-square)]()
