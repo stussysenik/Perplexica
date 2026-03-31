@@ -1,4 +1,6 @@
 import { useState, useRef, useEffect, KeyboardEvent } from 'react'
+import { ArrowUp } from '@phosphor-icons/react'
+import TextAction from 'src/components/ui/TextAction'
 
 interface Props {
   onSend: (message: string) => void
@@ -8,15 +10,14 @@ interface Props {
 }
 
 const modes = [
-  { key: 'speed', label: 'Speed', icon: '⚡' },
-  { key: 'balanced', label: 'Balanced', icon: '⚖️' },
-  { key: 'quality', label: 'Quality', icon: '🎯' },
+  { key: 'speed', label: 'Speed' },
+  { key: 'balanced', label: 'Balanced' },
+  { key: 'quality', label: 'Quality' },
 ]
 
 const MessageInput = ({ onSend, loading, mode, onModeChange }: Props) => {
   const [message, setMessage] = useState('')
   const textareaRef = useRef<HTMLTextAreaElement>(null)
-  const isMultiLine = message.includes('\n') || message.length > 80
 
   useEffect(() => {
     const handler = (e: globalThis.KeyboardEvent) => {
@@ -55,60 +56,61 @@ const MessageInput = ({ onSend, loading, mode, onModeChange }: Props) => {
   }
 
   return (
-    <div className="border-t border-light-200 dark:border-dark-200 bg-light-100 dark:bg-dark-secondary p-4">
+    <div className="border-t border-[var(--border-default)] p-4">
       <div className="max-w-3xl mx-auto">
-        {/* Mode selector */}
-        <div className="flex gap-1.5 mb-3">
+        {/* Mode selector — TextAction style */}
+        <div className="flex gap-3 mb-3">
           {modes.map(m => (
-            <button
+            <TextAction
               key={m.key}
               onClick={() => onModeChange(m.key)}
-              className={`
-                px-3 py-1.5 rounded-lg text-xs font-medium transition-all
-                ${mode === m.key
-                  ? 'bg-cyan-100 dark:bg-cyan-900/40 text-cyan-700 dark:text-cyan-300 border border-cyan-300 dark:border-cyan-700'
-                  : 'bg-light-200/60 dark:bg-dark-100 text-stone-500 dark:text-stone-400 border border-transparent hover:border-light-300 dark:hover:border-dark-200'
-                }
-              `}
-            >
-              {m.icon} {m.label}
-            </button>
+              label={m.label}
+              active={mode === m.key}
+              className={`text-small ${mode === m.key ? 'border-b-2 border-[var(--border-accent)] pb-0.5' : 'pb-[3px]'}`}
+            />
           ))}
         </div>
 
-        {/* Input */}
+        {/* Input container — 1px border, no fill, no shadow */}
         <div
-          className={`
-            flex items-end gap-2 bg-light-secondary dark:bg-dark-100
-            border border-light-200 dark:border-dark-200
-            focus-within:border-cyan-400 dark:focus-within:border-cyan-600
-            transition-colors
-            ${isMultiLine ? 'rounded-2xl' : 'rounded-full'}
-            p-2 pl-4
-          `}
+          className="flex items-end gap-2 border border-[var(--border-default)] rounded-spine
+            focus-within:border-[var(--border-accent)]
+            transition-colors duration-[180ms]
+            p-2 pl-4"
         >
+          <label htmlFor="search-input" className="sr-only">Search query</label>
           <textarea
+            id="search-input"
             ref={textareaRef}
             value={message}
             onChange={(e) => { setMessage(e.target.value); autoResize() }}
             onKeyDown={handleKeyDown}
             placeholder="Ask anything..."
             rows={1}
-            className="flex-1 bg-transparent text-sm text-stone-900 dark:text-stone-100 placeholder:text-stone-400 dark:placeholder:text-stone-500 resize-none outline-none min-h-[36px] max-h-[160px] py-1.5"
+            aria-label="Search query"
+            className="flex-1 bg-transparent text-body text-[var(--text-primary)] placeholder:text-[var(--text-muted)] resize-none outline-none min-h-[36px] max-h-[160px] py-1.5"
           />
           <button
             onClick={handleSubmit}
             disabled={loading || !message.trim()}
-            className="flex-shrink-0 w-9 h-9 rounded-full bg-cyan-500 hover:bg-cyan-600 disabled:bg-stone-300 dark:disabled:bg-stone-700 text-white flex items-center justify-center transition-colors"
+            className="flex-shrink-0 w-10 h-10 rounded-spine border border-[var(--border-accent)]
+              text-[var(--text-accent)]
+              hover:bg-[var(--surface-whisper)]
+              disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent
+              flex items-center justify-center
+              transition-colors duration-[180ms]"
+            aria-label="Send message"
           >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 10.5L12 3m0 0l7.5 7.5M12 3v18" />
-            </svg>
+            {loading ? (
+              <div className="w-4 h-4 border-2 border-[var(--border-muted)] border-t-[var(--border-accent)] rounded-full animate-spin" />
+            ) : (
+              <ArrowUp size={16} weight="bold" />
+            )}
           </button>
         </div>
 
-        <p className="text-[10px] text-stone-400 dark:text-stone-600 text-center mt-2">
-          Press <kbd className="px-1 py-0.5 rounded bg-light-200 dark:bg-dark-100 text-[9px] font-mono">/</kbd> to focus · Shift+Enter for new line
+        <p className="text-caption text-[var(--text-muted)] text-center mt-2 normal-case tracking-normal">
+          Press <kbd className="px-1 py-0.5 border border-[var(--border-default)] rounded-[2px] text-[9px] font-mono">/</kbd> to focus · Shift+Enter for new line
         </p>
       </div>
     </div>

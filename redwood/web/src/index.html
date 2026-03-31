@@ -4,10 +4,21 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Perplexica — Research-grade search</title>
+  <meta name="description" content="AI-powered search with source traceability. Research-grade answers backed by real sources." />
   <link rel="icon" type="image/png" href="/favicon.png" />
+  <!-- Preconnect to Google Fonts to eliminate critical path latency -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 </head>
 
 <body>
+  <script>
+    // Set Phoenix API URL for remote/tunnel access (override in .env or remove for localhost)
+    if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+      window.__PHOENIX_URL__ = 'https://organizations-commit-fiber-huntington.trycloudflare.com';
+    }
+  </script>
   <!-- Please keep this div empty -->
   <div id="redwood-app"></div>
 </body>

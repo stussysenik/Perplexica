@@ -1,5 +1,8 @@
 import { useState } from 'react'
+import { motion } from 'framer-motion'
 import type { Source } from 'src/lib/useSearch'
+import { variants, transition } from 'src/lib/motion'
+import TextAction from 'src/components/ui/TextAction'
 
 interface Props {
   sources: Source[]
@@ -13,27 +16,34 @@ const Sources = ({ sources }: Props) => {
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center gap-2 text-sm font-semibold text-stone-700 dark:text-stone-300">
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-        </svg>
-        Sources
-        <span className="text-xs font-normal text-stone-400">({sources.length})</span>
+      <div className="flex items-center gap-2">
+        <span className="text-caption text-[var(--text-muted)]">
+          Sources
+        </span>
+        <span className="text-caption text-[var(--text-muted)] font-normal normal-case tracking-normal">
+          ({sources.length})
+        </span>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+      <motion.div
+        variants={variants.stagger}
+        initial="initial"
+        animate="animate"
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-2"
+      >
         {displayed.map((source, idx) => (
-          <SourceCard key={idx} source={source} index={idx + 1} />
+          <motion.div key={idx} variants={variants.slideUp} transition={transition.normal}>
+            <SourceCard source={source} index={idx + 1} />
+          </motion.div>
         ))}
-      </div>
+      </motion.div>
 
       {sources.length > 4 && (
-        <button
+        <TextAction
           onClick={() => setShowAll(!showAll)}
-          className="text-xs text-cyan-600 dark:text-cyan-400 hover:underline font-medium"
-        >
-          {showAll ? 'Show less' : `View ${sources.length - 4} more sources`}
-        </button>
+          label={showAll ? 'Show less' : `View ${sources.length - 4} more sources`}
+          variant="accent"
+        />
       )}
     </div>
   )
@@ -47,47 +57,53 @@ function SourceCard({ source, index }: { source: Source; index: number }) {
   const isFile = url.startsWith('file_id://')
 
   return (
-    <div className="bg-light-100 dark:bg-dark-100 border border-light-200 dark:border-dark-200 rounded-xl p-3 hover:bg-light-200/60 dark:hover:bg-dark-200/40 transition-colors group">
+    <div
+      id={`source-${index}`}
+      className="border border-[var(--border-default)] border-l-[3px] border-l-[var(--border-accent)] rounded-spine p-3
+        hover:bg-[var(--surface-whisper)] transition-colors duration-[180ms]"
+    >
       <a
         href={isFile ? undefined : url}
         target="_blank"
         rel="noopener noreferrer"
         className="block"
       >
-        <div className="flex items-start gap-2 mb-1">
-          <span className="flex-shrink-0 w-5 h-5 rounded-md bg-cyan-100 dark:bg-cyan-900/40 text-cyan-700 dark:text-cyan-300 text-[10px] font-bold flex items-center justify-center">
+        <div className="flex items-start gap-2 mb-1.5">
+          {/* Favicon + domain (Caption style) */}
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            {!isFile && hostname && (
+              <img
+                src={`https://www.google.com/s2/favicons?domain=${hostname}&sz=16`}
+                alt=""
+                className="w-3.5 h-3.5 rounded-sm outline outline-1 outline-[var(--border-default)]"
+                loading="lazy"
+              />
+            )}
+            <span className="text-caption text-[var(--text-muted)] normal-case tracking-normal">
+              {isFile ? 'Uploaded file' : hostname}
+            </span>
+          </div>
+          {/* Citation index */}
+          <span className="ml-auto text-[10px] font-medium text-[var(--text-accent)] border border-[var(--border-accent)] rounded-[3px] px-1 leading-[18px]">
             {index}
           </span>
-          <p className="text-xs font-semibold leading-tight line-clamp-2 text-stone-800 dark:text-stone-200">
-            {title}
-          </p>
         </div>
-        <div className="flex items-center gap-1.5 mt-1.5">
-          {!isFile && hostname && (
-            <img
-              src={`https://www.google.com/s2/favicons?domain=${hostname}&sz=16`}
-              alt=""
-              className="w-3.5 h-3.5 rounded"
-              loading="lazy"
-            />
-          )}
-          <span className="text-[10px] text-stone-400 dark:text-stone-500 truncate">
-            {isFile ? '📎 Uploaded file' : hostname}
-          </span>
-        </div>
+        <p className="text-small font-semibold leading-tight line-clamp-2 text-[var(--text-primary)]">
+          {title}
+        </p>
       </a>
 
-      {/* Collapsible extracted text — Perplexity-style traceability */}
+      {/* Collapsible extracted text */}
       {source.content && (
-        <div className="mt-2 border-t border-light-200 dark:border-dark-200 pt-2">
-          <button
-            onClick={(e) => { e.preventDefault(); setExpanded(!expanded) }}
-            className="text-[10px] font-medium text-blue-500 hover:text-blue-400 transition-colors"
-          >
-            {expanded ? 'Hide extracted text' : 'View extracted text'}
-          </button>
+        <div className="mt-2 pt-2 border-t border-[var(--border-default)]">
+          <TextAction
+            onClick={() => setExpanded(!expanded)}
+            label={expanded ? 'Hide extracted text' : 'View extracted text'}
+            variant="accent"
+            className="text-[10px]"
+          />
           {expanded && (
-            <div className="mt-1.5 p-2 text-[11px] leading-relaxed text-stone-600 dark:text-stone-400 bg-light-200/50 dark:bg-dark-200/50 rounded-lg border-l-2 border-blue-400/50 max-h-32 overflow-y-auto">
+            <div className="mt-1.5 pl-3 text-[11px] leading-relaxed text-[var(--text-secondary)] border-l-[2px] border-l-[var(--border-accent)] max-h-32 overflow-y-auto">
               {source.content.slice(0, 300)}
               {source.content.length > 300 && '...'}
             </div>

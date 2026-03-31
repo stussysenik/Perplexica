@@ -3,7 +3,12 @@ defmodule PerplexicaWeb.Router do
 
   pipeline :api do
     plug :accepts, ["json"]
-    plug CORSPlug, origin: ["*"]
+    plug CORSPlug,
+      origin: [
+        ~r/^https?:\/\/localhost(:\d+)?$/,
+        ~r/^https?:\/\/127\.0\.0\.1(:\d+)?$/,
+        "https://perplexica-search.fly.dev"
+      ]
   end
 
   # GraphQL API

@@ -1,10 +1,13 @@
 import { useRef, useEffect } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useSearch } from 'src/lib/useSearch'
+import { variants, transition } from 'src/lib/motion'
 import MessageBox from 'src/components/Chat/MessageBox'
 import MessageInput from 'src/components/Chat/MessageInput'
+import TextAction from 'src/components/ui/TextAction'
 
 const HomePage = () => {
-  const { messages, loading, sendMessage, mode, setMode, clearChat } = useSearch()
+  const { messages, loading, sendMessage, mode, setMode, clearChat, chatId } = useSearch()
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -15,21 +18,36 @@ const HomePage = () => {
     <div className="flex flex-col h-full">
       {/* Messages area */}
       <div className="flex-1 overflow-y-auto">
-        {messages.length === 0 ? (
-          <EmptyState onSend={sendMessage} />
-        ) : (
-          <div className="py-6 px-4">
-            {messages.map((msg, idx) => (
-              <MessageBox
-                key={msg.messageId}
-                message={msg}
-                isLast={idx === messages.length - 1}
-                loading={loading}
-              />
-            ))}
-            <div ref={messagesEndRef} />
-          </div>
-        )}
+        <AnimatePresence mode="wait">
+          {messages.length === 0 ? (
+            <motion.div
+              key="empty"
+              {...variants.fadeIn}
+              transition={transition.normal}
+            >
+              <EmptyState onSend={sendMessage} />
+            </motion.div>
+          ) : (
+            <motion.div
+              key="messages"
+              {...variants.fadeIn}
+              transition={transition.normal}
+              className="py-6 px-4"
+            >
+              {messages.map((msg, idx) => (
+                <MessageBox
+                  key={msg.messageId}
+                  message={msg}
+                  isLast={idx === messages.length - 1}
+                  loading={loading}
+                  chatId={chatId}
+                  onSearch={sendMessage}
+                />
+              ))}
+              <div ref={messagesEndRef} />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Input */}
@@ -52,26 +70,25 @@ function EmptyState({ onSend }: { onSend: (q: string) => void }) {
   ]
 
   return (
-    <div className="flex flex-col items-center justify-center h-full px-4 pb-20">
-      <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-500 to-indigo-500 flex items-center justify-center text-white text-2xl font-bold mb-6 shadow-lg shadow-cyan-500/20">
-        P
-      </div>
-      <h1 className="text-3xl font-bold tracking-tight text-stone-900 dark:text-stone-100 mb-2">
-        What do you want to know?
+    <div className="flex flex-col items-center justify-center h-full px-4 pb-20 lg:pb-0">
+      {/* Wordmark — no logo badge, just typography */}
+      <h1 className="text-display tracking-tight text-[var(--text-primary)] mb-2">
+        Perplexica
       </h1>
-      <p className="text-stone-500 dark:text-stone-400 text-sm mb-8">
-        AI-powered search with source traceability
+      <p className="text-small text-[var(--text-muted)] mb-10">
+        Research-grade search with source traceability
       </p>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full max-w-lg">
+      {/* Suggestion chips as TextActions */}
+      <div className="flex flex-wrap justify-center gap-3 max-w-lg">
         {suggestions.map(s => (
-          <button
+          <TextAction
             key={s}
             onClick={() => onSend(s)}
-            className="text-left px-4 py-3 rounded-xl border border-light-200 dark:border-dark-200 text-sm text-stone-600 dark:text-stone-400 hover:bg-light-200/60 dark:hover:bg-dark-100 hover:border-light-300 dark:hover:border-dark-300 transition-all"
+            className="border border-[var(--border-default)] rounded-spine px-4 py-2.5 text-small hover:border-[var(--border-accent)] hover:bg-[var(--surface-whisper)]"
           >
             {s}
-          </button>
+          </TextAction>
         ))}
       </div>
     </div>

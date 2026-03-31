@@ -37,3 +37,5 @@ zig/.zig-cache/
 # Mise
 .mise.toml
 mise.toml
+.superpowers/
+tsconfig.tsbuildinfo

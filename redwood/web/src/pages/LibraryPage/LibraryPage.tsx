@@ -1,8 +1,12 @@
 import { useState, useEffect } from 'react'
+import { motion } from 'framer-motion'
 import { phoenixGql } from 'src/lib/phoenix'
+import { renderMarkdown } from 'src/lib/renderMarkdown'
+import { variants, transition } from 'src/lib/motion'
 import type { Source } from 'src/lib/useSearch'
-import MessageBox from 'src/components/Chat/MessageBox'
 import Sources from 'src/components/Sources/Sources'
+import TextAction from 'src/components/ui/TextAction'
+import { ArrowLeft } from '@phosphor-icons/react'
 
 interface Chat {
   id: string
@@ -17,24 +21,45 @@ interface StoredMessage {
   responseBlocks: any[]
 }
 
+interface Bookmark {
+  id: string
+  messageId: string
+  insertedAt: string
+}
+
+type Tab = 'chats' | 'bookmarks'
+
 const LibraryPage = () => {
+  const [tab, setTab] = useState<Tab>('chats')
   const [chats, setChats] = useState<Chat[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedChat, setSelectedChat] = useState<string | null>(null)
   const [messages, setMessages] = useState<StoredMessage[]>([])
   const [loadingMessages, setLoadingMessages] = useState(false)
+  const [bookmarks, setBookmarks] = useState<Bookmark[]>([])
+  const [loadingBookmarks, setLoadingBookmarks] = useState(false)
+
+  useEffect(() => { document.title = 'Library — Perplexica' }, [])
 
   const fetchChats = () => {
     setLoading(true)
     phoenixGql(`{ chats { id title createdAt } }`)
-      .then(res => {
-        setChats(res.data.chats || [])
-        setLoading(false)
-      })
+      .then(res => { setChats(res.data.chats || []); setLoading(false) })
       .catch(() => setLoading(false))
   }
 
+  const fetchBookmarks = () => {
+    setLoadingBookmarks(true)
+    phoenixGql(`{ bookmarks { id messageId insertedAt } }`)
+      .then(res => { setBookmarks(res.data.bookmarks || []); setLoadingBookmarks(false) })
+      .catch(() => setLoadingBookmarks(false))
+  }
+
   useEffect(() => { fetchChats() }, [])
+
+  useEffect(() => {
+    if (tab === 'bookmarks') fetchBookmarks()
+  }, [tab])
 
   const openChat = async (chatId: string) => {
     setSelectedChat(chatId)
@@ -52,6 +77,7 @@ const LibraryPage = () => {
 
   const deleteChat = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation()
+    if (!confirm('Delete this chat?')) return
     await phoenixGql(`mutation { deleteChat(id: ${JSON.stringify(id)}) { success } }`)
     if (selectedChat === id) { setSelectedChat(null); setMessages([]) }
     fetchChats()
@@ -69,20 +95,19 @@ const LibraryPage = () => {
 
   // Chat detail view
   if (selectedChat) {
-    const chat = chats.find(c => c.id === selectedChat)
     return (
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto p-6 pb-20 lg:pb-6">
         <div className="max-w-3xl mx-auto">
-          <button
+          <TextAction
             onClick={() => { setSelectedChat(null); setMessages([]) }}
-            className="flex items-center gap-2 text-sm text-stone-500 hover:text-stone-700 dark:hover:text-stone-300 mb-6 transition-colors"
-          >
-            <span>←</span> Back to Library
-          </button>
+            icon={<ArrowLeft size={16} weight="light" />}
+            label="Back to Library"
+            className="mb-6"
+          />
 
           {loadingMessages ? (
             <div className="flex items-center justify-center py-20">
-              <div className="w-6 h-6 border-2 border-stone-200 dark:border-stone-700 border-t-cyan-500 rounded-full animate-spin" />
+              <div className="w-5 h-5 border-2 border-[var(--border-muted)] border-t-[var(--border-accent)] rounded-full animate-spin" />
             </div>
           ) : (
             messages.map(msg => {
@@ -93,7 +118,7 @@ const LibraryPage = () => {
 
               return (
                 <div key={msg.messageId} className="mb-10">
-                  <h2 className="text-2xl font-semibold tracking-tight mb-4">{msg.query}</h2>
+                  <h2 className="text-h1 tracking-tight text-[var(--text-primary)] mb-4">{msg.query}</h2>
 
                   {sources.length > 0 && (
                     <div className="mb-4">
@@ -103,13 +128,17 @@ const LibraryPage = () => {
 
                   {textBlock?.data && (
                     <div
-                      className="prose prose-stone dark:prose-invert max-w-none prose-headings:tracking-tight prose-p:text-[15px] prose-p:leading-relaxed prose-a:text-cyan-600 dark:prose-a:text-cyan-400 prose-a:no-underline hover:prose-a:underline prose-code:text-sm prose-code:bg-light-200 dark:prose-code:bg-dark-100 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded"
+                      className="prose prose-gray dark:prose-invert max-w-none
+                        prose-headings:tracking-tight
+                        prose-p:text-body prose-p:leading-relaxed prose-p:[text-wrap:pretty]
+                        prose-a:text-[var(--text-accent)] prose-a:no-underline hover:prose-a:underline
+                        prose-code:text-small prose-code:bg-[var(--surface-secondary)] prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded-[2px]"
                       dangerouslySetInnerHTML={{ __html: renderMarkdown(textBlock.data) }}
                     />
                   )}
 
                   {msg.status === 'error' && (
-                    <div className="p-4 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 text-sm">
+                    <div className="p-4 border border-red-200 dark:border-red-800 border-l-[3px] border-l-red-500 rounded-spine text-small text-red-700 dark:text-red-300">
                       This search encountered an error.
                     </div>
                   )}
@@ -119,82 +148,140 @@ const LibraryPage = () => {
           )}
 
           {!loadingMessages && messages.length === 0 && (
-            <p className="text-stone-400 text-center py-12">No messages in this chat.</p>
+            <p className="text-[var(--text-muted)] text-small text-center py-12">No messages in this chat.</p>
           )}
         </div>
       </div>
     )
   }
 
-  // Chat list view
+  // Main list view
   return (
-    <div className="flex-1 overflow-y-auto p-6">
+    <div className="flex-1 overflow-y-auto p-6 pb-20 lg:pb-6">
       <div className="max-w-3xl mx-auto">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold tracking-tight">Library</h1>
-          <span className="text-xs text-stone-400 bg-light-200 dark:bg-dark-100 px-2 py-1 rounded-full">
-            {chats.length} chats
+          <h1 className="text-h1 tracking-tight text-[var(--text-primary)]">Library</h1>
+          <span className="text-caption text-[var(--text-muted)] border border-[var(--border-default)] px-2 py-1 rounded-spine normal-case tracking-normal">
+            {tab === 'chats' ? `${chats.length} chats` : `${bookmarks.length} saved`}
           </span>
         </div>
 
-        {loading && (
-          <div className="flex items-center justify-center py-20">
-            <div className="w-6 h-6 border-2 border-stone-200 dark:border-stone-700 border-t-cyan-500 rounded-full animate-spin" />
-          </div>
-        )}
-
-        {!loading && chats.length === 0 && (
-          <div className="text-center py-20">
-            <p className="text-stone-400 mb-2">No chats yet.</p>
-            <a href="/" className="text-cyan-600 dark:text-cyan-400 text-sm hover:underline">
-              Start a new search
-            </a>
-          </div>
-        )}
-
-        <div className="space-y-2">
-          {chats.map(chat => (
-            <div
-              key={chat.id}
-              onClick={() => openChat(chat.id)}
-              className="flex items-center gap-3 p-4 rounded-xl border border-light-200 dark:border-dark-200 bg-light-100 dark:bg-dark-100 hover:bg-light-200/50 dark:hover:bg-dark-200/30 transition-colors group cursor-pointer"
-            >
-              <div className="flex-1 min-w-0">
-                <h3 className="font-medium text-sm truncate">{chat.title}</h3>
-                <span className="text-xs text-stone-400">{timeAgo(chat.createdAt)}</span>
-              </div>
-              <button
-                onClick={(e) => deleteChat(chat.id, e)}
-                className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 text-stone-400 hover:text-red-500 transition-all text-xs"
-              >
-                ✕
-              </button>
-            </div>
-          ))}
+        {/* Tab Switcher */}
+        <div className="flex gap-6 mb-6 border-b border-[var(--border-default)]">
+          <TextAction
+            onClick={() => setTab('chats')}
+            label="Chats"
+            active={tab === 'chats'}
+            className={`pb-2.5 min-h-[44px] ${tab === 'chats' ? 'border-b-2 border-[var(--border-accent)]' : ''}`}
+          />
+          <TextAction
+            onClick={() => setTab('bookmarks')}
+            label="Bookmarks"
+            active={tab === 'bookmarks'}
+            className={`pb-2.5 min-h-[44px] ${tab === 'bookmarks' ? 'border-b-2 border-[var(--border-accent)]' : ''}`}
+          />
         </div>
+
+        {/* Chats Tab */}
+        {tab === 'chats' && (
+          <>
+            {loading && (
+              <div className="flex items-center justify-center py-20">
+                <div className="w-5 h-5 border-2 border-[var(--border-muted)] border-t-[var(--border-accent)] rounded-full animate-spin" />
+              </div>
+            )}
+
+            {!loading && chats.length === 0 && (
+              <div className="text-center py-20">
+                <p className="text-[var(--text-muted)] text-small mb-2">No chats yet.</p>
+                <TextAction href="/" label="Start a new search" variant="accent" />
+              </div>
+            )}
+
+            {!loading && chats.length > 0 && (
+              <motion.div
+                variants={variants.stagger}
+                initial="initial"
+                animate="animate"
+                className="space-y-2"
+              >
+                {chats.map(chat => (
+                  <motion.div key={chat.id} variants={variants.slideUp} transition={transition.normal}>
+                    <div
+                      onClick={() => openChat(chat.id)}
+                      className="flex items-center gap-3 p-4
+                        border border-[var(--border-default)] border-l-[3px] border-l-[var(--border-accent)]
+                        rounded-spine hover:bg-[var(--surface-whisper)]
+                        transition-colors duration-[180ms] cursor-pointer group"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-small font-semibold text-[var(--text-primary)] truncate">{chat.title}</h3>
+                        <span className="text-caption text-[var(--text-muted)] normal-case tracking-normal tabular-nums">{timeAgo(chat.createdAt)}</span>
+                      </div>
+                      <TextAction
+                        onClick={(e) => deleteChat(chat.id, e as any)}
+                        label="Delete"
+                        variant="danger"
+                        className="opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity"
+                      />
+                    </div>
+                  </motion.div>
+                ))}
+              </motion.div>
+            )}
+          </>
+        )}
+
+        {/* Bookmarks Tab */}
+        {tab === 'bookmarks' && (
+          <>
+            {loadingBookmarks && (
+              <div className="flex items-center justify-center py-20">
+                <div className="w-5 h-5 border-2 border-[var(--border-muted)] border-t-[var(--border-accent)] rounded-full animate-spin" />
+              </div>
+            )}
+
+            {!loadingBookmarks && bookmarks.length === 0 && (
+              <div className="text-center py-20">
+                <p className="text-[var(--text-secondary)] text-small font-medium mb-1">No bookmarks yet</p>
+                <p className="text-[var(--text-muted)] text-small max-w-xs mx-auto">
+                  Use the bookmark button on any answer to save it here for quick access later.
+                </p>
+              </div>
+            )}
+
+            {!loadingBookmarks && bookmarks.length > 0 && (
+              <motion.div
+                variants={variants.stagger}
+                initial="initial"
+                animate="animate"
+                className="space-y-2"
+              >
+                {bookmarks.map(bm => (
+                  <motion.div key={bm.id} variants={variants.slideUp} transition={transition.normal}>
+                    <div className="flex items-center gap-3 p-4
+                      border border-[var(--border-default)] border-l-[3px] border-l-[var(--border-highlight)]
+                      rounded-spine hover:bg-[var(--surface-whisper)]
+                      transition-colors duration-[180ms]"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <p className="text-small font-medium text-[var(--text-primary)] truncate">
+                          {bm.messageId}
+                        </p>
+                        <span className="text-caption text-[var(--text-muted)] normal-case tracking-normal tabular-nums">
+                          Saved {timeAgo(bm.insertedAt)}
+                        </span>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </motion.div>
+            )}
+          </>
+        )}
       </div>
     </div>
   )
-}
-
-function renderMarkdown(text: string): string {
-  if (!text) return ''
-  return text
-    .replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>')
-    .replace(/`([^`]+)`/g, '<code>$1</code>')
-    .replace(/^### (.+)$/gm, '<h3>$1</h3>')
-    .replace(/^## (.+)$/gm, '<h2>$1</h2>')
-    .replace(/^# (.+)$/gm, '<h1>$1</h1>')
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    .replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<em>$1</em>')
-    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
-    .replace(/\[(\d+)\]/g, '<sup class="inline-flex items-center justify-center w-4 h-4 text-[9px] font-bold rounded bg-cyan-100 dark:bg-cyan-900/50 text-cyan-700 dark:text-cyan-300 ml-0.5">$1</sup>')
-    .replace(/^- (.+)$/gm, '<li>$1</li>')
-    .replace(/(<li>[\s\S]*?<\/li>\n?)+/g, (m) => `<ul>${m}</ul>`)
-    .replace(/^> (.+)$/gm, '<blockquote><p>$1</p></blockquote>')
-    .replace(/\n\n/g, '</p><p>')
-    .replace(/^(?!<[hupoltb])((?!<\/).+)$/gm, '<p>$1</p>')
-    .replace(/<p><\/p>/g, '')
 }
 
 export default LibraryPage

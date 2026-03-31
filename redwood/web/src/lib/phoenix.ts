@@ -15,3 +15,6 @@ export const phoenixGql = async (query: string, variables?: Record<string, any>)
 }
 
 export const phoenixUrl = PHOENIX_URL
+
+/** WebSocket URL for Absinthe subscriptions */
+export const phoenixWsUrl = phoenixUrl.replace(/^http/, 'ws') + '/socket'
