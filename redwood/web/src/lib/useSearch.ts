@@ -135,12 +135,25 @@ export function useSearch(): UseSearchReturn {
       setLoading(true)
 
       try {
+        // Build conversation history from previous messages for context
+        const history = messages
+          .filter(m => m.status === 'completed')
+          .flatMap(m => [
+            { role: 'user', content: m.query },
+            ...(m.answer ? [{ role: 'assistant', content: m.answer }] : []),
+          ])
+
+        const historyParam = history.length > 0
+          ? `, history: ${JSON.stringify(history)}`
+          : ''
+
         const res = await phoenixGql(`mutation {
           startSearch(
             query: ${JSON.stringify(query)},
             chatId: ${JSON.stringify(chatId)},
             messageId: ${JSON.stringify(msgId)},
             optimizationMode: ${JSON.stringify(mode)}
+            ${historyParam}
           ) { sessionId status }
         }`)
 
@@ -211,11 +224,20 @@ export function useSearch(): UseSearchReturn {
           },
 
           onError: (error: Error) => {
-            console.error('[search subscription error]', error)
+            console.warn('[search subscription error, falling back to polling]', error.message)
             fallbackPoll(chatId, msgId)
           },
 
-          onComplete: () => {},
+          onComplete: () => {
+            // Subscription ended — if message isn't completed, fall back to polling
+            setMessages(prev => {
+              const msg = prev.find(m => m.messageId === msgId)
+              if (msg && msg.status === 'answering') {
+                fallbackPoll(chatId, msgId)
+              }
+              return prev
+            })
+          },
         })
 
         unsubRef.current = unsubscribe
@@ -229,7 +251,7 @@ export function useSearch(): UseSearchReturn {
         setLoading(false)
       }
     },
-    [loading, mode, updateMsg, fallbackPoll]
+    [loading, mode, messages, updateMsg, fallbackPoll]
   )
 
   return {

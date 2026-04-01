@@ -82,8 +82,8 @@ const AppLayout = ({ children }: Props) => {
 
       {/* Main content */}
       <main id="main-content" className="flex flex-col min-w-0 min-h-0">
-        {/* Mobile header */}
-        <div className="lg:hidden flex items-center justify-between px-4 py-3 border-b border-[var(--border-default)]">
+        {/* Mobile header — with safe area inset for notched devices */}
+        <div className="lg:hidden flex items-center justify-between px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top))] border-b border-[var(--border-default)]">
           <span className="text-h3 font-semibold tracking-tight text-[var(--text-primary)]">
             Perplexica
           </span>
