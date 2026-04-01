@@ -86,19 +86,28 @@ User types query
 
 ## Screenshots
 
-### Light Mode -- Home
-![Home Light](docs/screenshots/home-light.png)
-
-### Dark Mode -- Home
-![Home Dark](docs/screenshots/home-dark.png)
+### Search Flow (Desktop)
+![Demo](demo.gif)
+> Type a query, see real-time search progress, sources appear with citation badges, answer streams in with table of contents.
 
 ### Discover Page
-![Discover](docs/screenshots/discover-light.png)
+![Discover](docs/screenshots/discover.gif)
+> Browse topics (Tech, Finance, Art, Sports, Entertainment) — click tabs to switch, article cards load with stagger animation.
 
-### Library Page
-![Library](docs/screenshots/library-light.png)
+### Mobile Experience
+<p align="center">
+<img src="docs/screenshots/mobile.gif" width="300" alt="Mobile search flow">
+</p>
 
-> **Note**: For animated demos of the search flow and real-time progress indicators, see the [Live Demo](https://perplexica-search.fly.dev/index.html).
+> Full functionality on mobile — bottom nav, search, navigate between pages. Dark mode shown.
+
+### Light Mode
+| Home | Discover | Library |
+|:----:|:--------:|:-------:|
+| ![](docs/screenshots/home-light.png) | ![](docs/screenshots/discover-light.png) | ![](docs/screenshots/library-light.png) |
+
+### Dark Mode
+![Home Dark](docs/screenshots/home-dark.png)
 
 ## Features
 
