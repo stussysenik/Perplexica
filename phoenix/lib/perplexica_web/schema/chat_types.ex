@@ -21,4 +21,26 @@ defmodule PerplexicaWeb.Schema.ChatTypes do
     field :status, non_null(:string)
     field :created_at, :string
   end
+
+  # ── Share links & bookmarks ──────────────────────────────────────────
+
+  object :shared_link do
+    field :id, non_null(:id)
+    field :slug, non_null(:string)
+    field :url, non_null(:string)
+    field :message_id, non_null(:id)
+    field :inserted_at, :string
+  end
+
+  object :bookmark do
+    field :id, non_null(:id)
+    field :message_id, non_null(:id)
+    field :note, :string
+    field :inserted_at, :string
+  end
+
+  object :bookmark_toggle_result do
+    field :bookmarked, non_null(:boolean)
+    field :bookmark, :bookmark
+  end
 end

@@ -1,108 +1,150 @@
-'use client';
+"use client";
 
-import { Fragment, useEffect, useRef, useState } from 'react';
-import MessageInput from './MessageInput';
-import MessageBox from './MessageBox';
-import MessageBoxLoading from './MessageBoxLoading';
-import { useChat } from '@/lib/hooks/useChat';
+import { useEffect, useRef, useState } from "react";
+import MessageInput from "./MessageInput";
+import MessageBox from "./MessageBox";
+import MessageBoxLoading from "./MessageBoxLoading";
+import { useChat } from "@/lib/hooks/useChat";
+import { motion, AnimatePresence } from "framer-motion";
 
 const Chat = () => {
-  const { sections, loading, messageAppeared, messages } = useChat();
+        const { sections, loading, messageAppeared, messages } = useChat();
 
-  const [dividerWidth, setDividerWidth] = useState(0);
-  const dividerRef = useRef<HTMLDivElement | null>(null);
-  const messageEnd = useRef<HTMLDivElement | null>(null);
-  const lastScrolledRef = useRef<number>(0);
+        const [dividerWidth, setDividerWidth] = useState(0);
+        const dividerRef = useRef<HTMLDivElement | null>(null);
+        const messageEnd = useRef<HTMLDivElement | null>(null);
+        const lastScrolledRef = useRef<number>(0);
 
-  useEffect(() => {
-    const updateDividerWidth = () => {
-      if (dividerRef.current) {
-        setDividerWidth(dividerRef.current.offsetWidth);
-      }
-    };
+        useEffect(() => {
+                const updateDividerWidth = () => {
+                        if (dividerRef.current) {
+                                setDividerWidth(dividerRef.current.offsetWidth);
+                        }
+                };
 
-    updateDividerWidth();
+                updateDividerWidth();
 
-    const resizeObserver = new ResizeObserver(() => {
-      updateDividerWidth();
-    });
+                const resizeObserver = new ResizeObserver(() => {
+                        updateDividerWidth();
+                });
 
-    const currentRef = dividerRef.current;
-    if (currentRef) {
-      resizeObserver.observe(currentRef);
-    }
+                const currentRef = dividerRef.current;
+                if (currentRef) {
+                        resizeObserver.observe(currentRef);
+                }
 
-    window.addEventListener('resize', updateDividerWidth);
+                window.addEventListener("resize", updateDividerWidth);
 
-    return () => {
-      if (currentRef) {
-        resizeObserver.unobserve(currentRef);
-      }
-      resizeObserver.disconnect();
-      window.removeEventListener('resize', updateDividerWidth);
-    };
-  }, [sections.length]);
+                return () => {
+                        if (currentRef) {
+                                resizeObserver.unobserve(currentRef);
+                        }
+                        resizeObserver.disconnect();
+                        window.removeEventListener(
+                                "resize",
+                                updateDividerWidth,
+                        );
+                };
+        }, [sections.length]);
 
-  useEffect(() => {
-    const scroll = () => {
-      messageEnd.current?.scrollIntoView({ behavior: 'auto' });
-    };
+        useEffect(() => {
+                const scroll = () => {
+                        messageEnd.current?.scrollIntoView({
+                                behavior: "auto",
+                        });
+                };
 
-    if (messages.length === 1) {
-      document.title = `${messages[0].query.substring(0, 30)} - Perplexica`;
-    }
+                if (messages.length === 1) {
+                        document.title = `${messages[0].query.substring(0, 30)} - Perplexica`;
+                }
 
-    if (sections.length > lastScrolledRef.current) {
-      scroll();
-      lastScrolledRef.current = sections.length;
-    }
-  }, [messages]);
-
-  return (
-    <div className="flex flex-col space-y-6 pt-8 pb-44 lg:pb-28 sm:mx-4 md:mx-8">
-      {sections.map((section, i) => {
-        const isLast = i === sections.length - 1;
+                if (sections.length > lastScrolledRef.current) {
+                        scroll();
+                        lastScrolledRef.current = sections.length;
+                }
+        }, [messages]);
 
         return (
-          <Fragment key={section.message.messageId}>
-            <MessageBox
-              section={section}
-              sectionIndex={i}
-              dividerRef={isLast ? dividerRef : undefined}
-              isLast={isLast}
-            />
-            {!isLast && (
-              <div className="h-px w-full bg-light-secondary dark:bg-dark-secondary" />
-            )}
-          </Fragment>
+                <div className="flex flex-col space-y-6 pt-4 pb-48 lg:pb-32">
+                        <AnimatePresence initial={false}>
+                                {sections.map((section, i) => {
+                                        const isLast =
+                                                i === sections.length - 1;
+
+                                        return (
+                                                <motion.div
+                                                        key={
+                                                                section.message
+                                                                        .messageId
+                                                        }
+                                                        initial={{
+                                                                opacity: 0,
+                                                                y: 20,
+                                                        }}
+                                                        animate={{
+                                                                opacity: 1,
+                                                                y: 0,
+                                                        }}
+                                                        transition={{
+                                                                duration: 0.4,
+                                                                ease: [
+                                                                        0.25,
+                                                                        0.1,
+                                                                        0.25, 1,
+                                                                ],
+                                                        }}
+                                                        className="flex flex-col space-y-6"
+                                                >
+                                                        <MessageBox
+                                                                section={
+                                                                        section
+                                                                }
+                                                                sectionIndex={i}
+                                                                dividerRef={
+                                                                        isLast
+                                                                                ? dividerRef
+                                                                                : undefined
+                                                                }
+                                                                isLast={isLast}
+                                                        />
+                                                        {!isLast && (
+                                                                <div className="h-px w-full bg-light-200 dark:bg-dark-200 mx-auto" />
+                                                        )}
+                                                </motion.div>
+                                        );
+                                })}
+                        </AnimatePresence>
+                        {loading && !messageAppeared && <MessageBoxLoading />}
+                        <div ref={messageEnd} className="h-0" />
+                        {dividerWidth > 0 && (
+                                <div
+                                        className="fixed z-40 bottom-20 lg:bottom-6 left-1/2 -translate-x-1/2 px-4 lg:px-0"
+                                        style={{
+                                                width: Math.min(
+                                                        dividerWidth,
+                                                        768,
+                                                ),
+                                        }}
+                                >
+                                        {/* Light mode gradient */}
+                                        <div
+                                                className="pointer-events-none absolute -bottom-6 left-0 right-0 h-[calc(100%+24px+24px)] dark:hidden"
+                                                style={{
+                                                        background: "linear-gradient(to top, var(--bg-primary) 0%, var(--bg-primary) 35%, color-mix(in srgb, var(--bg-primary) 95%, transparent) 45%, color-mix(in srgb, var(--bg-primary) 85%, transparent) 55%, color-mix(in srgb, var(--bg-primary) 70%, transparent) 65%, color-mix(in srgb, var(--bg-primary) 50%, transparent) 75%, color-mix(in srgb, var(--bg-primary) 30%, transparent) 85%, color-mix(in srgb, var(--bg-primary) 10%, transparent) 92%, transparent 100%)",
+                                                }}
+                                        />
+                                        {/* Dark mode gradient */}
+                                        <div
+                                                className="pointer-events-none absolute -bottom-6 left-0 right-0 h-[calc(100%+24px+24px)] hidden dark:block"
+                                                style={{
+                                                        background: "linear-gradient(to top, var(--bg-primary) 0%, var(--bg-primary) 35%, color-mix(in srgb, var(--bg-primary) 95%, transparent) 45%, color-mix(in srgb, var(--bg-primary) 85%, transparent) 55%, color-mix(in srgb, var(--bg-primary) 70%, transparent) 65%, color-mix(in srgb, var(--bg-primary) 50%, transparent) 75%, color-mix(in srgb, var(--bg-primary) 30%, transparent) 85%, color-mix(in srgb, var(--bg-primary) 10%, transparent) 92%, transparent 100%)",
+                                                }}
+                                        />
+                                        <MessageInput />
+                                </div>
+                        )}
+                </div>
         );
-      })}
-      {loading && !messageAppeared && <MessageBoxLoading />}
-      <div ref={messageEnd} className="h-0" />
-      {dividerWidth > 0 && (
-        <div
-          className="fixed z-40 bottom-24 lg:bottom-6"
-          style={{ width: dividerWidth }}
-        >
-          <div
-            className="pointer-events-none absolute -bottom-6 left-0 right-0 h-[calc(100%+24px+24px)] dark:hidden"
-            style={{
-              background:
-                'linear-gradient(to top, #ffffff 0%, #ffffff 35%, rgba(255,255,255,0.95) 45%, rgba(255,255,255,0.85) 55%, rgba(255,255,255,0.7) 65%, rgba(255,255,255,0.5) 75%, rgba(255,255,255,0.3) 85%, rgba(255,255,255,0.1) 92%, transparent 100%)',
-            }}
-          />
-          <div
-            className="pointer-events-none absolute -bottom-6 left-0 right-0 h-[calc(100%+24px+24px)] hidden dark:block"
-            style={{
-              background:
-                'linear-gradient(to top, #0d1117 0%, #0d1117 35%, rgba(13,17,23,0.95) 45%, rgba(13,17,23,0.85) 55%, rgba(13,17,23,0.7) 65%, rgba(13,17,23,0.5) 75%, rgba(13,17,23,0.3) 85%, rgba(13,17,23,0.1) 92%, transparent 100%)',
-            }}
-          />
-          <MessageInput />
-        </div>
-      )}
-    </div>
-  );
 };
 
 export default Chat;

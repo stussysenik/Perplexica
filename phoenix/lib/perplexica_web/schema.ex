@@ -46,6 +46,23 @@ defmodule PerplexicaWeb.Schema do
         {:ok, %{status: "ok", version: "0.1.0"}}
       end
     end
+
+    @desc "Resolve a shared message by its slug"
+    field :shared_message, :message do
+      arg :slug, non_null(:string)
+      resolve &PerplexicaWeb.Resolvers.ShareResolver.get_shared_message/3
+    end
+
+    @desc "Get a bookmark for a specific message"
+    field :bookmark, :bookmark do
+      arg :message_id, non_null(:id)
+      resolve &PerplexicaWeb.Resolvers.ShareResolver.get_bookmark/3
+    end
+
+    @desc "List all bookmarks"
+    field :bookmarks, list_of(:bookmark) do
+      resolve &PerplexicaWeb.Resolvers.ShareResolver.list_bookmarks/3
+    end
   end
 
   mutation do
@@ -65,6 +82,18 @@ defmodule PerplexicaWeb.Schema do
     field :delete_chat, :delete_result do
       arg :id, non_null(:id)
       resolve &PerplexicaWeb.Resolvers.ChatResolver.delete_chat/3
+    end
+
+    @desc "Create a shareable link for a message"
+    field :create_share_link, :shared_link do
+      arg :message_id, non_null(:id)
+      resolve &PerplexicaWeb.Resolvers.ShareResolver.create_share_link/3
+    end
+
+    @desc "Toggle bookmark on a message (create or remove)"
+    field :toggle_bookmark, :bookmark_toggle_result do
+      arg :message_id, non_null(:id)
+      resolve &PerplexicaWeb.Resolvers.ShareResolver.toggle_bookmark/3
     end
   end
 

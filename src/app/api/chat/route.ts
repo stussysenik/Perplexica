@@ -7,7 +7,7 @@ import { ChatTurnMessage } from '@/lib/types';
 import { SearchSources } from '@/lib/agents/search/types';
 import db from '@/lib/db';
 import { eq } from 'drizzle-orm';
-import { chats } from '@/lib/db/schema';
+import { chats, messages } from '@/lib/db/schema';
 import UploadManager from '@/lib/uploads/manager';
 
 export const runtime = 'nodejs';
@@ -194,6 +194,22 @@ export const POST = async (req: Request) => {
             }) + '\n',
           ),
         );
+        
+        db.insert(messages)
+          .values({
+            messageId: body.message.messageId,
+            chatId: body.message.chatId,
+            backendId: session.id,
+            query: body.message.content,
+            createdAt: new Date().toISOString(),
+            responseBlocks: session.getAllBlocks(),
+            status: 'completed',
+          })
+          .execute()
+          .catch((err) => {
+            console.error('Failed to save message to DB:', err);
+          });
+
         writer.close();
         session.removeAllListeners();
       } else if (event === 'error') {

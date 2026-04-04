@@ -3,97 +3,148 @@
 @tailwind utilities;
 
 @font-face {
-  font-family: 'PP Editorial';
-  src: url('/fonts/pp-ed-ul.otf') format('opentype');
-  font-weight: 300;
-  font-style: normal;
-  font-display: swap;
+        font-family: "PP Editorial";
+        src: url("/fonts/pp-ed-ul.otf") format("opentype");
+        font-weight: 300;
+        font-style: normal;
+        font-display: swap;
 }
 
 @layer base {
-  .overflow-hidden-scrollable {
-    -ms-overflow-style: none;
-  }
+        :root {
+                --bg-primary: #ffffff;
+                --bg-secondary: #f6f8fa;
+                --bg-tertiary: #e8edf1;
+                --border-primary: #e8edf1;
+                --border-secondary: #d0d7de;
+                --text-primary: #1a1a2e;
+                --text-secondary: #4a4a6a;
+                --text-muted: #8892a0;
+                --accent: #24a0ed;
+                --accent-hover: #1a8cd8;
+                --scrollbar-thumb: #d0d7de;
+                --scrollbar-hover: #b0b8c1;
+                --shadow-color: rgba(0, 0, 0, 0.06);
+                --gradient-from: #ffffff;
+        }
 
-  .overflow-hidden-scrollable::-webkit-scrollbar {
-    display: none;
-  }
+        .dark {
+                --bg-primary: #0d1117;
+                --bg-secondary: #161b22;
+                --bg-tertiary: #21262d;
+                --border-primary: #21262d;
+                --border-secondary: #30363d;
+                --text-primary: #e6edf3;
+                --text-secondary: #8b949e;
+                --text-muted: #6e7681;
+                --accent: #24a0ed;
+                --accent-hover: #58b5f2;
+                --scrollbar-thumb: #30363d;
+                --scrollbar-hover: #484f58;
+                --shadow-color: rgba(0, 0, 0, 0.3);
+                --gradient-from: #0d1117;
+        }
 
-  * {
-    scrollbar-width: thin;
-    scrollbar-color: #e8edf1 transparent; /* light-200 */
-  }
+        .overflow-hidden-scrollable {
+                -ms-overflow-style: none;
+        }
 
-  *::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-  }
+        .overflow-hidden-scrollable::-webkit-scrollbar {
+                display: none;
+        }
 
-  *::-webkit-scrollbar-track {
-    background: transparent;
-  }
+        * {
+                scrollbar-width: thin;
+                scrollbar-color: var(--scrollbar-thumb) transparent;
+                transition:
+                        background-color 0.2s ease,
+                        color 0.15s ease;
+        }
 
-  *::-webkit-scrollbar-thumb {
-    background: #e8edf1; /* light-200 */
-    border-radius: 3px;
-    transition: background 0.2s ease;
-  }
+        *::-webkit-scrollbar {
+                width: 5px;
+                height: 5px;
+        }
 
-  *::-webkit-scrollbar-thumb:hover {
-    background: #d0d7de; /* light-300 */
-  }
+        *::-webkit-scrollbar-track {
+                background: transparent;
+        }
 
-  @media (prefers-color-scheme: dark) {
-    * {
-      scrollbar-color: #21262d transparent; /* dark-200 */
-    }
+        *::-webkit-scrollbar-thumb {
+                background: var(--scrollbar-thumb);
+                border-radius: 10px;
+                transition: background 0.2s ease;
+        }
 
-    *::-webkit-scrollbar-thumb {
-      background: #21262d; /* dark-200 */
-    }
+        *::-webkit-scrollbar-thumb:hover {
+                background: var(--scrollbar-hover);
+        }
 
-    *::-webkit-scrollbar-thumb:hover {
-      background: #30363d; /* dark-300 */
-    }
-  }
+        html {
+                scroll-behavior: smooth;
+                -webkit-tap-highlight-color: transparent;
+        }
 
-  :root.dark *,
-  html.dark *,
-  body.dark * {
-    scrollbar-color: #21262d transparent; /* dark-200 */
-  }
+        body {
+                background-color: var(--bg-primary);
+                color: var(--text-primary);
+                -webkit-font-smoothing: antialiased;
+                -moz-osx-font-smoothing: grayscale;
+        }
 
-  :root.dark *::-webkit-scrollbar-thumb,
-  html.dark *::-webkit-scrollbar-thumb,
-  body.dark *::-webkit-scrollbar-thumb {
-    background: #21262d; /* dark-200 */
-  }
+        /* Smooth theme transitions */
+        html.theme-transitioning,
+        html.theme-transitioning *,
+        html.theme-transitioning *::before,
+        html.theme-transitioning *::after {
+                transition:
+                        background-color 0.3s ease,
+                        color 0.3s ease,
+                        border-color 0.3s ease,
+                        box-shadow 0.3s ease !important;
+        }
 
-  :root.dark *::-webkit-scrollbar-thumb:hover,
-  html.dark *::-webkit-scrollbar-thumb:hover,
-  body.dark *::-webkit-scrollbar-thumb:hover {
-    background: #30363d; /* dark-300 */
-  }
+        /* Selection styling */
+        ::selection {
+                background-color: rgba(36, 160, 237, 0.2);
+        }
 
-  html {
-    scroll-behavior: smooth;
-  }
+        .dark ::selection {
+                background-color: rgba(36, 160, 237, 0.3);
+        }
 }
 
 @layer utilities {
-  .line-clamp-2 {
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-    line-clamp: 2;
-    overflow: hidden;
-  }
+        .line-clamp-2 {
+                display: -webkit-box;
+                -webkit-box-orient: vertical;
+                -webkit-line-clamp: 2;
+                line-clamp: 2;
+                overflow: hidden;
+        }
+
+        .line-clamp-3 {
+                display: -webkit-box;
+                -webkit-box-orient: vertical;
+                -webkit-line-clamp: 3;
+                line-clamp: 3;
+                overflow: hidden;
+        }
+
+        .safe-bottom {
+                padding-bottom: env(safe-area-inset-bottom, 0px);
+        }
+
+        .safe-top {
+                padding-top: env(safe-area-inset-top, 0px);
+        }
 }
 
+/* Prevent iOS zoom on input focus */
 @media screen and (-webkit-min-device-pixel-ratio: 0) {
-  select,
-  textarea,
-  input {
-    font-size: 16px !important;
-  }
+        select,
+        textarea,
+        input {
+                font-size: 16px !important;
+        }
 }

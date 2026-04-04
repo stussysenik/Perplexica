@@ -1,60 +1,49 @@
-'use client';
-import { useTheme } from 'next-themes';
-import { useCallback, useEffect, useState } from 'react';
-import Select from '../ui/Select';
+"use client";
+import { useTheme } from "next-themes";
+import { useCallback, useEffect, useState } from "react";
+import { Sun, Moon } from "lucide-react";
 
-type Theme = 'dark' | 'light' | 'system';
+type Theme = "dark" | "light";
 
 const ThemeSwitcher = ({ className }: { className?: string }) => {
-  const [mounted, setMounted] = useState(false);
+        const [mounted, setMounted] = useState(false);
+        const { theme, setTheme } = useTheme();
 
-  const { theme, setTheme } = useTheme();
+        const handleThemeSwitch = () => {
+                const root = document.documentElement;
+                root.classList.add("theme-transitioning");
+                setTheme(theme === "dark" ? "light" : "dark");
+                setTimeout(
+                        () => root.classList.remove("theme-transitioning"),
+                        300,
+                );
+        };
 
-  const isTheme = useCallback((t: Theme) => t === theme, [theme]);
+        useEffect(() => {
+                setMounted(true);
+        }, []);
 
-  const handleThemeSwitch = (theme: Theme) => {
-    setTheme(theme);
-  };
+        if (!mounted) {
+                return (
+                        <button className={`p-2 rounded-lg ${className || ""}`}>
+                                <div className="w-4 h-4" />
+                        </button>
+                );
+        }
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    if (isTheme('system')) {
-      const preferDarkScheme = window.matchMedia(
-        '(prefers-color-scheme: dark)',
-      );
-
-      const detectThemeChange = (event: MediaQueryListEvent) => {
-        const theme: Theme = event.matches ? 'dark' : 'light';
-        setTheme(theme);
-      };
-
-      preferDarkScheme.addEventListener('change', detectThemeChange);
-
-      return () => {
-        preferDarkScheme.removeEventListener('change', detectThemeChange);
-      };
-    }
-  }, [isTheme, setTheme, theme]);
-
-  // Avoid Hydration Mismatch
-  if (!mounted) {
-    return null;
-  }
-
-  return (
-    <Select
-      className={className}
-      value={theme}
-      onChange={(e) => handleThemeSwitch(e.target.value as Theme)}
-      options={[
-        { value: 'light', label: 'Light' },
-        { value: 'dark', label: 'Dark' },
-      ]}
-    />
-  );
+        return (
+                <button
+                        onClick={handleThemeSwitch}
+                        className={`p-2 rounded-lg hover:bg-light-secondary dark:hover:bg-dark-secondary transition-colors duration-200 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white ${className || ""}`}
+                        title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+                >
+                        {theme === "dark" ? (
+                                <Sun size={16} />
+                        ) : (
+                                <Moon size={16} />
+                        )}
+                </button>
+        );
 };
 
 export default ThemeSwitcher;

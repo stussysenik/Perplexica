@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "$0")" && pwd)"
+PHOENIX_PID=""
+REDWOOD_PID=""
+
+cleanup() {
+  echo ""
+  echo "Shutting down..."
+  [[ -n "$REDWOOD_PID" ]] && kill "$REDWOOD_PID" 2>/dev/null
+  [[ -n "$PHOENIX_PID" ]] && kill "$PHOENIX_PID" 2>/dev/null
+  wait 2>/dev/null
+  echo "Done."
+}
+trap cleanup EXIT INT TERM
+
+# Colors
+CYAN='\033[0;36m'
+YELLOW='\033[0;33m'
+RED='\033[0;31m'
+NC='\033[0m'
+
+# Free ports if occupied by stale processes
+free_port() {
+  local port=$1
+  local pid
+  pid=$(lsof -ti :"$port" 2>/dev/null || true)
+  if [[ -n "$pid" ]]; then
+    echo -e "${RED}[dev]${NC} Port $port in use (pid $pid) — killing"
+    kill $pid 2>/dev/null || true
+    sleep 0.5
+  fi
+}
+
+free_port 4000
+free_port 8910
+
+echo -e "${CYAN}[phoenix]${NC} Starting on :4000"
+echo -e "${YELLOW}[redwood]${NC} Starting on :8910"
+echo ""
+
+# Phoenix backend
+(cd "$ROOT/phoenix" && mix phx.server 2>&1 | while IFS= read -r line; do
+  echo -e "${CYAN}[phoenix]${NC} $line"
+done) &
+PHOENIX_PID=$!
+
+# RedwoodJS frontend
+(cd "$ROOT/redwood" && yarn rw dev web 2>&1 | while IFS= read -r line; do
+  echo -e "${YELLOW}[redwood]${NC} $line"
+done) &
+REDWOOD_PID=$!
+
+wait

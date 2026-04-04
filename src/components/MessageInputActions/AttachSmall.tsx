@@ -1,158 +1,301 @@
+import { Popover, PopoverButton, PopoverPanel } from "@headlessui/react";
 import {
-  Popover,
-  PopoverButton,
-  PopoverPanel,
-  Transition,
-} from '@headlessui/react';
-import { File, LoaderCircle, Paperclip, Plus, Trash } from 'lucide-react';
-import { Fragment, useRef, useState } from 'react';
-import { useChat } from '@/lib/hooks/useChat';
-import { AnimatePresence } from 'motion/react';
-import { motion } from 'framer-motion';
+        File,
+        Image as ImageIcon,
+        LoaderCircle,
+        Paperclip,
+        Plus,
+        Trash,
+        X,
+} from "lucide-react";
+import { useRef, useState } from "react";
+import { useChat } from "@/lib/hooks/useChat";
+import { AnimatePresence, motion } from "motion/react";
+
+const IMAGE_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif"];
+const DOC_TYPES = [
+        "application/pdf",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "text/plain",
+];
+const ALL_TYPES = [...DOC_TYPES, ...IMAGE_TYPES];
+
+const isImageFile = (fileName: string) => {
+        const ext = fileName.split(".").pop()?.toLowerCase();
+        return ["png", "jpg", "jpeg", "webp", "gif"].includes(ext || "");
+};
 
 const AttachSmall = () => {
-  const { files, setFiles, setFileIds, fileIds } = useChat();
+        const { files, setFiles, setFileIds, fileIds } = useChat();
 
-  const [loading, setLoading] = useState(false);
-  const fileInputRef = useRef<any>();
+        const [loading, setLoading] = useState(false);
+        const fileInputRef = useRef<any>();
 
-  const handleChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    setLoading(true);
-    const data = new FormData();
+        const handleChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+                setLoading(true);
+                const data = new FormData();
 
-    for (let i = 0; i < e.target.files!.length; i++) {
-      data.append('files', e.target.files![i]);
-    }
+                for (let i = 0; i < e.target.files!.length; i++) {
+                        data.append("files", e.target.files![i]);
+                }
 
-    const embeddingModelProvider = localStorage.getItem(
-      'embeddingModelProviderId',
-    );
-    const embeddingModel = localStorage.getItem('embeddingModelKey');
+                const embeddingModelProvider = localStorage.getItem(
+                        "embeddingModelProviderId",
+                );
+                const embeddingModel =
+                        localStorage.getItem("embeddingModelKey");
 
-    data.append('embedding_model_provider_id', embeddingModelProvider!);
-    data.append('embedding_model_key', embeddingModel!);
+                data.append(
+                        "embedding_model_provider_id",
+                        embeddingModelProvider || "",
+                );
+                data.append("embedding_model_key", embeddingModel || "");
 
-    const res = await fetch(`/api/uploads`, {
-      method: 'POST',
-      body: data,
-    });
+                try {
+                        const res = await fetch(`/api/uploads`, {
+                                method: "POST",
+                                body: data,
+                        });
 
-    const resData = await res.json();
+                        const resData = await res.json();
+                        setFiles([...files, ...resData.files]);
+                        setFileIds([
+                                ...fileIds,
+                                ...resData.files.map(
+                                        (file: any) => file.fileId,
+                                ),
+                        ]);
+                } catch (err) {
+                        console.error("Upload error:", err);
+                } finally {
+                        setLoading(false);
+                }
+        };
 
-    setFiles([...files, ...resData.files]);
-    setFileIds([...fileIds, ...resData.files.map((file: any) => file.fileId)]);
-    setLoading(false);
-  };
+        if (loading) {
+                return (
+                        <div className="p-1">
+                                <LoaderCircle
+                                        size={16}
+                                        className="text-[#24A0ED] animate-spin"
+                                />
+                        </div>
+                );
+        }
 
-  return loading ? (
-    <div className="flex flex-row items-center justify-between space-x-1 p-1 ">
-      <LoaderCircle size={20} className="text-sky-500 animate-spin" />
-    </div>
-  ) : files.length > 0 ? (
-    <Popover className="max-w-[15rem] md:max-w-md lg:max-w-lg">
-      {({ open }) => (
-        <>
-          <PopoverButton
-            type="button"
-            className="flex flex-row items-center justify-between space-x-1 p-1 text-black/50 dark:text-white/50 rounded-xl hover:bg-light-secondary dark:hover:bg-dark-secondary active:scale-95 transition duration-200 hover:text-black dark:hover:text-white"
-          >
-            <File size={20} className="text-sky-500" />
-          </PopoverButton>
-          <AnimatePresence>
-            {open && (
-              <PopoverPanel
-                className="absolute z-10 w-64 md:w-[350px] bottom-14"
-                static
-              >
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.9 }}
-                  transition={{ duration: 0.1, ease: 'easeOut' }}
-                  className="origin-bottom-left bg-light-primary dark:bg-dark-primary border rounded-md border-light-200 dark:border-dark-200 w-full max-h-[200px] md:max-h-none overflow-y-auto flex flex-col"
-                >
-                  <div className="flex flex-row items-center justify-between px-3 py-2">
-                    <h4 className="text-black/70 dark:text-white/70 font-medium text-sm">
-                      Attached files
-                    </h4>
-                    <div className="flex flex-row items-center space-x-4">
-                      <button
+        if (files.length > 0) {
+                return (
+                        <Popover className="relative">
+                                {({ open }) => (
+                                        <>
+                                                <PopoverButton
+                                                        type="button"
+                                                        className="flex items-center gap-1 p-1 rounded-lg text-black/40 dark:text-white/40 hover:text-black/70 dark:hover:text-white/70 hover:bg-light-secondary dark:hover:bg-dark-secondary transition-all duration-200"
+                                                >
+                                                        <div className="relative">
+                                                                <Paperclip
+                                                                        size={
+                                                                                16
+                                                                        }
+                                                                />
+                                                                <span className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 bg-[#24A0ED] text-white text-[8px] font-bold rounded-full flex items-center justify-center">
+                                                                        {
+                                                                                files.length
+                                                                        }
+                                                                </span>
+                                                        </div>
+                                                </PopoverButton>
+                                                <AnimatePresence>
+                                                        {open && (
+                                                                <PopoverPanel
+                                                                        className="absolute z-10 w-64 bottom-10 left-0"
+                                                                        static
+                                                                >
+                                                                        <motion.div
+                                                                                initial={{
+                                                                                        opacity: 0,
+                                                                                        scale: 0.95,
+                                                                                        y: 4,
+                                                                                }}
+                                                                                animate={{
+                                                                                        opacity: 1,
+                                                                                        scale: 1,
+                                                                                        y: 0,
+                                                                                }}
+                                                                                exit={{
+                                                                                        opacity: 0,
+                                                                                        scale: 0.95,
+                                                                                        y: 4,
+                                                                                }}
+                                                                                transition={{
+                                                                                        duration: 0.15,
+                                                                                        ease: "easeOut",
+                                                                                }}
+                                                                                className="origin-bottom-left bg-light-primary dark:bg-dark-primary border border-light-200 dark:border-dark-200 rounded-xl shadow-lg overflow-hidden"
+                                                                        >
+                                                                                <div className="flex items-center justify-between px-3 py-2 border-b border-light-200 dark:border-dark-200">
+                                                                                        <span className="text-xs font-medium text-black/60 dark:text-white/60">
+                                                                                                {
+                                                                                                        files.length
+                                                                                                }{" "}
+                                                                                                file
+                                                                                                {files.length !==
+                                                                                                1
+                                                                                                        ? "s"
+                                                                                                        : ""}
+                                                                                        </span>
+                                                                                        <div className="flex items-center gap-3">
+                                                                                                <button
+                                                                                                        type="button"
+                                                                                                        onClick={() =>
+                                                                                                                fileInputRef.current.click()
+                                                                                                        }
+                                                                                                        className="flex items-center gap-1 text-[#24A0ED] text-xs"
+                                                                                                >
+                                                                                                        <Plus
+                                                                                                                size={
+                                                                                                                        12
+                                                                                                                }
+                                                                                                        />{" "}
+                                                                                                        Add
+                                                                                                </button>
+                                                                                                <button
+                                                                                                        onClick={() => {
+                                                                                                                setFiles(
+                                                                                                                        [],
+                                                                                                                );
+                                                                                                                setFileIds(
+                                                                                                                        [],
+                                                                                                                );
+                                                                                                        }}
+                                                                                                        className="flex items-center gap-1 text-black/40 dark:text-white/40 hover:text-red-500 text-xs transition-colors"
+                                                                                                >
+                                                                                                        <Trash
+                                                                                                                size={
+                                                                                                                        11
+                                                                                                                }
+                                                                                                        />{" "}
+                                                                                                        Clear
+                                                                                                </button>
+                                                                                        </div>
+                                                                                </div>
+                                                                                <div className="max-h-40 overflow-y-auto p-1">
+                                                                                        {files.map(
+                                                                                                (
+                                                                                                        file,
+                                                                                                        i,
+                                                                                                ) => (
+                                                                                                        <div
+                                                                                                                key={
+                                                                                                                        i
+                                                                                                                }
+                                                                                                                className="flex items-center gap-2 p-2 rounded-lg hover:bg-light-secondary dark:hover:bg-dark-secondary transition-colors group"
+                                                                                                        >
+                                                                                                                <div className="flex items-center justify-center w-7 h-7 rounded-md bg-light-secondary dark:bg-dark-secondary flex-shrink-0">
+                                                                                                                        {isImageFile(
+                                                                                                                                file.fileName,
+                                                                                                                        ) ? (
+                                                                                                                                <ImageIcon
+                                                                                                                                        size={
+                                                                                                                                                13
+                                                                                                                                        }
+                                                                                                                                        className="text-[#24A0ED]"
+                                                                                                                                />
+                                                                                                                        ) : (
+                                                                                                                                <File
+                                                                                                                                        size={
+                                                                                                                                                13
+                                                                                                                                        }
+                                                                                                                                        className="text-black/50 dark:text-white/50"
+                                                                                                                                />
+                                                                                                                        )}
+                                                                                                                </div>
+                                                                                                                <span className="text-xs text-black/60 dark:text-white/60 truncate flex-1">
+                                                                                                                        {
+                                                                                                                                file.fileName
+                                                                                                                        }
+                                                                                                                </span>
+                                                                                                                <button
+                                                                                                                        type="button"
+                                                                                                                        onClick={() => {
+                                                                                                                                const newFiles =
+                                                                                                                                        files.filter(
+                                                                                                                                                (
+                                                                                                                                                        _,
+                                                                                                                                                        idx,
+                                                                                                                                                ) =>
+                                                                                                                                                        idx !==
+                                                                                                                                                        i,
+                                                                                                                                        );
+                                                                                                                                const newFileIds =
+                                                                                                                                        fileIds.filter(
+                                                                                                                                                (
+                                                                                                                                                        _,
+                                                                                                                                                        idx,
+                                                                                                                                                ) =>
+                                                                                                                                                        idx !==
+                                                                                                                                                        i,
+                                                                                                                                        );
+                                                                                                                                setFiles(
+                                                                                                                                        newFiles,
+                                                                                                                                );
+                                                                                                                                setFileIds(
+                                                                                                                                        newFileIds,
+                                                                                                                                );
+                                                                                                                        }}
+                                                                                                                        className="opacity-0 group-hover:opacity-100 text-black/30 dark:text-white/30 hover:text-black/60 dark:hover:text-white/60 transition-all"
+                                                                                                                >
+                                                                                                                        <X
+                                                                                                                                size={
+                                                                                                                                        11
+                                                                                                                                }
+                                                                                                                        />
+                                                                                                                </button>
+                                                                                                        </div>
+                                                                                                ),
+                                                                                        )}
+                                                                                </div>
+                                                                                <input
+                                                                                        type="file"
+                                                                                        onChange={
+                                                                                                handleChange
+                                                                                        }
+                                                                                        ref={
+                                                                                                fileInputRef
+                                                                                        }
+                                                                                        accept={ALL_TYPES.join(
+                                                                                                ",",
+                                                                                        )}
+                                                                                        multiple
+                                                                                        hidden
+                                                                                />
+                                                                        </motion.div>
+                                                                </PopoverPanel>
+                                                        )}
+                                                </AnimatePresence>
+                                        </>
+                                )}
+                        </Popover>
+                );
+        }
+
+        return (
+                <button
                         type="button"
                         onClick={() => fileInputRef.current.click()}
-                        className="flex flex-row items-center space-x-1 text-black/70 dark:text-white/70 hover:text-black hover:dark:text-white transition duration-200"
-                      >
+                        className="flex items-center gap-0.5 p-1.5 rounded-lg text-black/30 dark:text-white/30 hover:text-black/60 dark:hover:text-white/60 hover:bg-light-secondary dark:hover:bg-dark-secondary transition-all duration-200"
+                >
                         <input
-                          type="file"
-                          onChange={handleChange}
-                          ref={fileInputRef}
-                          accept=".pdf,.docx,.txt"
-                          multiple
-                          hidden
+                                type="file"
+                                onChange={handleChange}
+                                ref={fileInputRef}
+                                accept={ALL_TYPES.join(",")}
+                                multiple
+                                hidden
                         />
-                        <Plus size={16} />
-                        <p className="text-xs">Add</p>
-                      </button>
-                      <button
-                        onClick={() => {
-                          setFiles([]);
-                          setFileIds([]);
-                        }}
-                        className="flex flex-row items-center space-x-1 text-black/70 dark:text-white/70 hover:text-black hover:dark:text-white transition duration-200"
-                      >
-                        <Trash size={13} />
-                        <p className="text-xs">Clear</p>
-                      </button>
-                    </div>
-                  </div>
-                  <div className="h-[0.5px] mx-2 bg-white/10" />
-                  <div className="flex flex-col items-center">
-                    {files.map((file, i) => (
-                      <div
-                        key={i}
-                        className="flex flex-row items-center justify-start w-full space-x-3 p-3"
-                      >
-                        <div className="bg-light-100 dark:bg-dark-100 flex items-center justify-center w-9 h-9 rounded-md">
-                          <File
-                            size={16}
-                            className="text-black/70 dark:text-white/70"
-                          />
-                        </div>
-                        <p className="text-black/70 dark:text-white/70 text-xs">
-                          {file.fileName.length > 25
-                            ? file.fileName
-                                .replace(/\.\w+$/, '')
-                                .substring(0, 25) +
-                              '...' +
-                              file.fileExtension
-                            : file.fileName}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </motion.div>
-              </PopoverPanel>
-            )}
-          </AnimatePresence>
-        </>
-      )}
-    </Popover>
-  ) : (
-    <button
-      type="button"
-      onClick={() => fileInputRef.current.click()}
-      className="flex flex-row items-center space-x-1 text-black/50 dark:text-white/50 rounded-xl hover:bg-light-secondary dark:hover:bg-dark-secondary transition duration-200 hover:text-black dark:hover:text-white p-1"
-    >
-      <input
-        type="file"
-        onChange={handleChange}
-        ref={fileInputRef}
-        accept=".pdf,.docx,.txt"
-        multiple
-        hidden
-      />
-      <Paperclip size={16} />
-    </button>
-  );
+                        <Paperclip size={15} />
+                </button>
+        );
 };
 
 export default AttachSmall;

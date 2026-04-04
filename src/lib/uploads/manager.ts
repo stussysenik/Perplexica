@@ -1,218 +1,383 @@
 import path from "path";
-import BaseEmbedding from "../models/base/embedding"
-import crypto from "crypto"
-import fs from 'fs';
+import BaseEmbedding from "../models/base/embedding";
+import crypto from "crypto";
+import fs from "fs";
 import { splitText } from "../utils/splitText";
-import { PDFParse } from 'pdf-parse';
-import { CanvasFactory } from 'pdf-parse/worker';
-import officeParser from 'officeparser'
+import { PDFParse } from "pdf-parse";
+import { CanvasFactory } from "pdf-parse/worker";
+import officeParser from "officeparser";
 
-const supportedMimeTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain'] as const
+const imageMimeTypes = [
+        "image/png",
+        "image/jpeg",
+        "image/webp",
+        "image/gif",
+] as const;
 
-type SupportedMimeType = typeof supportedMimeTypes[number];
+const supportedMimeTypes = [
+        "application/pdf",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "text/plain",
+        ...imageMimeTypes,
+] as const;
+
+type SupportedMimeType = (typeof supportedMimeTypes)[number];
+
+type ImageMimeType = (typeof imageMimeTypes)[number];
+
+function isImageMime(type: string): type is ImageMimeType {
+        return (imageMimeTypes as readonly string[]).includes(type);
+}
 
 type UploadManagerParams = {
-    embeddingModel: BaseEmbedding<any>;
-}
+        embeddingModel: BaseEmbedding<any>;
+};
 
 type RecordedFile = {
-    id: string;
-    name: string;
-    filePath: string;
-    contentPath: string;
-    uploadedAt: string;
-}
+        id: string;
+        name: string;
+        filePath: string;
+        contentPath: string;
+        uploadedAt: string;
+};
 
 type FileRes = {
-    fileName: string;
-    fileExtension: string;
-    fileId: string;
-}
+        fileName: string;
+        fileExtension: string;
+        fileId: string;
+};
 
 class UploadManager {
-    private embeddingModel: BaseEmbedding<any>;
-    static uploadsDir = path.join(process.cwd(), 'data', 'uploads');
-    static uploadedFilesRecordPath = path.join(this.uploadsDir, 'uploaded_files.json');
+        private embeddingModel: BaseEmbedding<any>;
+        static uploadsDir = path.join(process.cwd(), "data", "uploads");
+        static uploadedFilesRecordPath = path.join(
+                this.uploadsDir,
+                "uploaded_files.json",
+        );
 
-    constructor(private params: UploadManagerParams) {
-        this.embeddingModel = params.embeddingModel;
+        constructor(private params: UploadManagerParams) {
+                this.embeddingModel = params.embeddingModel;
 
-        if (!fs.existsSync(UploadManager.uploadsDir)) {
-            fs.mkdirSync(UploadManager.uploadsDir, { recursive: true });
-        }
-
-        if (!fs.existsSync(UploadManager.uploadedFilesRecordPath)) {
-            const data = {
-                files: []
-            }
-
-            fs.writeFileSync(UploadManager.uploadedFilesRecordPath, JSON.stringify(data, null, 2));
-        }
-    }
-
-    private static getRecordedFiles(): RecordedFile[] {
-        const data = fs.readFileSync(UploadManager.uploadedFilesRecordPath, 'utf-8');
-        return JSON.parse(data).files;
-    }
-
-    private static addNewRecordedFile(fileRecord: RecordedFile) {
-        const currentData = this.getRecordedFiles()
-
-        currentData.push(fileRecord);
-
-        fs.writeFileSync(UploadManager.uploadedFilesRecordPath, JSON.stringify({ files: currentData }, null, 2));
-    }
-
-    static getFile(fileId: string): RecordedFile | null {
-        const recordedFiles = this.getRecordedFiles();
-
-        return recordedFiles.find(f => f.id === fileId) || null;
-    }
-
-    static getFileChunks(fileId: string): { content: string; embedding: number[] }[] {
-        try {
-            const recordedFile = this.getFile(fileId);
-
-            if (!recordedFile) {
-                throw new Error(`File with ID ${fileId} not found`);
-            }
-
-            const contentData = JSON.parse(fs.readFileSync(recordedFile.contentPath, 'utf-8'))
-
-            return contentData.chunks;
-        } catch (err) {
-            console.log('Error getting file chunks:', err);
-            return [];
-        }
-    }
-
-    private async extractContentAndEmbed(filePath: string, fileType: SupportedMimeType): Promise<string> {
-        switch (fileType) {
-            case 'text/plain':
-                const content = fs.readFileSync(filePath, 'utf-8');
-
-                const splittedText = splitText(content, 512, 128)
-                const embeddings = await this.embeddingModel.embedText(splittedText)
-
-                if (embeddings.length !== splittedText.length) {
-                    throw new Error('Embeddings and text chunks length mismatch');
+                if (!fs.existsSync(UploadManager.uploadsDir)) {
+                        fs.mkdirSync(UploadManager.uploadsDir, {
+                                recursive: true,
+                        });
                 }
 
-                const contentPath = filePath.split('.').slice(0, -1).join('.') + '.content.json';
+                if (!fs.existsSync(UploadManager.uploadedFilesRecordPath)) {
+                        const data = {
+                                files: [],
+                        };
 
-                const data = {
-                    chunks: splittedText.map((text, i) => {
-                        return {
-                            content: text,
-                            embedding: embeddings[i],
+                        fs.writeFileSync(
+                                UploadManager.uploadedFilesRecordPath,
+                                JSON.stringify(data, null, 2),
+                        );
+                }
+        }
+
+        private static getRecordedFiles(): RecordedFile[] {
+                const data = fs.readFileSync(
+                        UploadManager.uploadedFilesRecordPath,
+                        "utf-8",
+                );
+                return JSON.parse(data).files;
+        }
+
+        private static addNewRecordedFile(fileRecord: RecordedFile) {
+                const currentData = this.getRecordedFiles();
+
+                currentData.push(fileRecord);
+
+                fs.writeFileSync(
+                        UploadManager.uploadedFilesRecordPath,
+                        JSON.stringify({ files: currentData }, null, 2),
+                );
+        }
+
+        static getFile(fileId: string): RecordedFile | null {
+                const recordedFiles = this.getRecordedFiles();
+
+                return recordedFiles.find((f) => f.id === fileId) || null;
+        }
+
+        static getFileChunks(
+                fileId: string,
+        ): { content: string; embedding: number[] }[] {
+                try {
+                        const recordedFile = this.getFile(fileId);
+
+                        if (!recordedFile) {
+                                throw new Error(
+                                        `File with ID ${fileId} not found`,
+                                );
                         }
-                    })
+
+                        const contentData = JSON.parse(
+                                fs.readFileSync(
+                                        recordedFile.contentPath,
+                                        "utf-8",
+                                ),
+                        );
+
+                        return contentData.chunks;
+                } catch (err) {
+                        console.log("Error getting file chunks:", err);
+                        return [];
                 }
-
-                fs.writeFileSync(contentPath, JSON.stringify(data, null, 2));
-
-                return contentPath;
-            case 'application/pdf':
-                const pdfBuffer = fs.readFileSync(filePath);
-
-                const parser = new PDFParse({
-                    data: pdfBuffer,
-                    CanvasFactory
-                })
-
-                const pdfText = await parser.getText().then(res => res.text)
-
-                const pdfSplittedText = splitText(pdfText, 512, 128)
-                const pdfEmbeddings = await this.embeddingModel.embedText(pdfSplittedText)
-
-                if (pdfEmbeddings.length !== pdfSplittedText.length) {
-                    throw new Error('Embeddings and text chunks length mismatch');
-                }
-
-                const pdfContentPath = filePath.split('.').slice(0, -1).join('.') + '.content.json';
-
-                const pdfData = {
-                    chunks: pdfSplittedText.map((text, i) => {
-                        return {
-                            content: text,
-                            embedding: pdfEmbeddings[i],
-                        }
-                    })
-                }
-
-                fs.writeFileSync(pdfContentPath, JSON.stringify(pdfData, null, 2));
-
-                return pdfContentPath;
-            case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
-                const docBuffer = fs.readFileSync(filePath);
-
-                const docText = await (officeParser as any).parseOfficeAsync?.(docBuffer) ?? await officeParser.parseOffice(docBuffer)
-
-                const docSplittedText = splitText(docText, 512, 128)
-                const docEmbeddings = await this.embeddingModel.embedText(docSplittedText)
-
-                if (docEmbeddings.length !== docSplittedText.length) {
-                    throw new Error('Embeddings and text chunks length mismatch');
-                }
-
-                const docContentPath = filePath.split('.').slice(0, -1).join('.') + '.content.json';
-
-                const docData = {
-                    chunks: docSplittedText.map((text, i) => {
-                        return {
-                            content: text,
-                            embedding: docEmbeddings[i],
-                        }
-                    })
-                }
-
-                fs.writeFileSync(docContentPath, JSON.stringify(docData, null, 2));
-
-                return docContentPath;
-            default:
-                throw new Error(`Unsupported file type: ${fileType}`);
         }
-    }
 
-    async processFiles(files: File[]): Promise<FileRes[]> {
-        const processedFiles: FileRes[] = [];
+        private async extractContentAndEmbed(
+                filePath: string,
+                fileType: SupportedMimeType,
+        ): Promise<string> {
+                switch (fileType) {
+                        case "text/plain":
+                                const content = fs.readFileSync(
+                                        filePath,
+                                        "utf-8",
+                                );
 
-        await Promise.all(files.map(async (file) => {
-            if (!(supportedMimeTypes as unknown as string[]).includes(file.type)) {
-                throw new Error(`File type ${file.type} not supported`);
-            }
+                                const splittedText = splitText(
+                                        content,
+                                        512,
+                                        128,
+                                );
+                                const embeddings =
+                                        await this.embeddingModel.embedText(
+                                                splittedText,
+                                        );
 
-            const fileId = crypto.randomBytes(16).toString('hex');
+                                if (embeddings.length !== splittedText.length) {
+                                        throw new Error(
+                                                "Embeddings and text chunks length mismatch",
+                                        );
+                                }
 
-            const fileExtension = file.name.split('.').pop();
-            const fileName = `${crypto.randomBytes(16).toString('hex')}.${fileExtension}`;
-            const filePath = path.join(UploadManager.uploadsDir, fileName);
+                                const contentPath =
+                                        filePath
+                                                .split(".")
+                                                .slice(0, -1)
+                                                .join(".") + ".content.json";
 
-            const buffer = Buffer.from(await file.arrayBuffer())
+                                const data = {
+                                        chunks: splittedText.map((text, i) => {
+                                                return {
+                                                        content: text,
+                                                        embedding: embeddings[
+                                                                i
+                                                        ],
+                                                };
+                                        }),
+                                };
 
-            fs.writeFileSync(filePath, buffer);
+                                fs.writeFileSync(
+                                        contentPath,
+                                        JSON.stringify(data, null, 2),
+                                );
 
-            const contentFilePath = await this.extractContentAndEmbed(filePath, file.type as SupportedMimeType);
+                                return contentPath;
+                        case "application/pdf":
+                                const pdfBuffer = fs.readFileSync(filePath);
 
-            const fileRecord: RecordedFile = {
-                id: fileId,
-                name: file.name,
-                filePath: filePath,
-                contentPath: contentFilePath,
-                uploadedAt: new Date().toISOString(),
-            }
+                                const parser = new PDFParse({
+                                        data: pdfBuffer,
+                                        CanvasFactory,
+                                });
 
-            UploadManager.addNewRecordedFile(fileRecord);
+                                const pdfText = await parser
+                                        .getText()
+                                        .then((res) => res.text);
 
-            processedFiles.push({
-                fileExtension: fileExtension || '',
-                fileId,
-                fileName: file.name
-            });
-        }))
+                                const pdfSplittedText = splitText(
+                                        pdfText,
+                                        512,
+                                        128,
+                                );
+                                const pdfEmbeddings =
+                                        await this.embeddingModel.embedText(
+                                                pdfSplittedText,
+                                        );
 
-        return processedFiles;
-    }
+                                if (
+                                        pdfEmbeddings.length !==
+                                        pdfSplittedText.length
+                                ) {
+                                        throw new Error(
+                                                "Embeddings and text chunks length mismatch",
+                                        );
+                                }
+
+                                const pdfContentPath =
+                                        filePath
+                                                .split(".")
+                                                .slice(0, -1)
+                                                .join(".") + ".content.json";
+
+                                const pdfData = {
+                                        chunks: pdfSplittedText.map(
+                                                (text, i) => {
+                                                        return {
+                                                                content: text,
+                                                                embedding: pdfEmbeddings[
+                                                                        i
+                                                                ],
+                                                        };
+                                                },
+                                        ),
+                                };
+
+                                fs.writeFileSync(
+                                        pdfContentPath,
+                                        JSON.stringify(pdfData, null, 2),
+                                );
+
+                                return pdfContentPath;
+                        case "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+                                const docBuffer = fs.readFileSync(filePath);
+
+                                const docText =
+                                        (await (
+                                                officeParser as any
+                                        ).parseOfficeAsync?.(docBuffer)) ??
+                                        (await officeParser.parseOffice(
+                                                docBuffer,
+                                        ));
+
+                                const docSplittedText = splitText(
+                                        docText,
+                                        512,
+                                        128,
+                                );
+                                const docEmbeddings =
+                                        await this.embeddingModel.embedText(
+                                                docSplittedText,
+                                        );
+
+                                if (
+                                        docEmbeddings.length !==
+                                        docSplittedText.length
+                                ) {
+                                        throw new Error(
+                                                "Embeddings and text chunks length mismatch",
+                                        );
+                                }
+
+                                const docContentPath =
+                                        filePath
+                                                .split(".")
+                                                .slice(0, -1)
+                                                .join(".") + ".content.json";
+
+                                const docData = {
+                                        chunks: docSplittedText.map(
+                                                (text, i) => {
+                                                        return {
+                                                                content: text,
+                                                                embedding: docEmbeddings[
+                                                                        i
+                                                                ],
+                                                        };
+                                                },
+                                        ),
+                                };
+
+                                fs.writeFileSync(
+                                        docContentPath,
+                                        JSON.stringify(docData, null, 2),
+                                );
+
+                                return docContentPath;
+                        default:
+                                if (isImageMime(fileType)) {
+                                        // Images are stored as-is for vision queries.
+                                        // No text extraction or embedding is performed.
+                                        const contentPath =
+                                                filePath
+                                                        .split(".")
+                                                        .slice(0, -1)
+                                                        .join(".") +
+                                                ".content.json";
+                                        fs.writeFileSync(
+                                                contentPath,
+                                                JSON.stringify(
+                                                        {
+                                                                chunks: [],
+                                                                isImage: true,
+                                                                mimeType: fileType,
+                                                        },
+                                                        null,
+                                                        2,
+                                                ),
+                                        );
+                                        return contentPath;
+                                }
+                                throw new Error(
+                                        `Unsupported file type: ${fileType}`,
+                                );
+                }
+        }
+
+        async processFiles(files: File[]): Promise<FileRes[]> {
+                const processedFiles: FileRes[] = [];
+
+                await Promise.all(
+                        files.map(async (file) => {
+                                if (
+                                        !(
+                                                supportedMimeTypes as unknown as string[]
+                                        ).includes(file.type)
+                                ) {
+                                        throw new Error(
+                                                `File type ${file.type} not supported`,
+                                        );
+                                }
+
+                                const fileId = crypto
+                                        .randomBytes(16)
+                                        .toString("hex");
+
+                                const fileExtension = file.name
+                                        .split(".")
+                                        .pop();
+                                const fileName = `${crypto.randomBytes(16).toString("hex")}.${fileExtension}`;
+                                const filePath = path.join(
+                                        UploadManager.uploadsDir,
+                                        fileName,
+                                );
+
+                                const buffer = Buffer.from(
+                                        await file.arrayBuffer(),
+                                );
+
+                                fs.writeFileSync(filePath, buffer);
+
+                                const contentFilePath =
+                                        await this.extractContentAndEmbed(
+                                                filePath,
+                                                file.type as SupportedMimeType,
+                                        );
+
+                                const fileRecord: RecordedFile = {
+                                        id: fileId,
+                                        name: file.name,
+                                        filePath: filePath,
+                                        contentPath: contentFilePath,
+                                        uploadedAt: new Date().toISOString(),
+                                };
+
+                                UploadManager.addNewRecordedFile(fileRecord);
+
+                                processedFiles.push({
+                                        fileExtension: fileExtension || "",
+                                        fileId,
+                                        fileName: file.name,
+                                });
+                        }),
+                );
+
+                return processedFiles;
+        }
 }
 
 export default UploadManager;

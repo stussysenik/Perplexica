@@ -1,169 +1,210 @@
-import { cn } from '@/lib/utils';
 import {
-  Popover,
-  PopoverButton,
-  PopoverPanel,
-  Transition,
-} from '@headlessui/react';
+        Popover,
+        PopoverButton,
+        PopoverPanel,
+        Transition,
+} from "@headlessui/react";
 import {
-  CopyPlus,
-  File,
-  Link,
-  LoaderCircle,
-  Paperclip,
-  Plus,
-  Trash,
-} from 'lucide-react';
-import { Fragment, useRef, useState } from 'react';
-import { useChat } from '@/lib/hooks/useChat';
-import { AnimatePresence } from 'motion/react';
-import { motion } from 'framer-motion';
+        File,
+        Image as ImageIcon,
+        LoaderCircle,
+        Paperclip,
+        Plus,
+        Trash,
+        X,
+} from "lucide-react";
+import { Fragment, useRef, useState } from "react";
+import { useChat } from "@/lib/hooks/useChat";
+import { AnimatePresence, motion } from "motion/react";
+
+const IMAGE_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif"];
+const DOC_TYPES = [
+        "application/pdf",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "text/plain",
+];
+const ALL_TYPES = [...DOC_TYPES, ...IMAGE_TYPES];
+
+const isImageFile = (fileName: string) => {
+        const ext = fileName.split(".").pop()?.toLowerCase();
+        return ["png", "jpg", "jpeg", "webp", "gif"].includes(ext || "");
+};
 
 const Attach = () => {
-  const { files, setFiles, setFileIds, fileIds } = useChat();
+        const { files, setFiles, setFileIds, fileIds } = useChat();
 
-  const [loading, setLoading] = useState(false);
-  const fileInputRef = useRef<any>();
+        const [loading, setLoading] = useState(false);
+        const fileInputRef = useRef<any>();
 
-  const handleChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    setLoading(true);
-    const data = new FormData();
+        const handleChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+                setLoading(true);
+                const data = new FormData();
 
-    for (let i = 0; i < e.target.files!.length; i++) {
-      data.append('files', e.target.files![i]);
-    }
+                for (let i = 0; i < e.target.files!.length; i++) {
+                        data.append("files", e.target.files![i]);
+                }
 
-    const embeddingModelProvider = localStorage.getItem(
-      'embeddingModelProviderId',
-    );
-    const embeddingModel = localStorage.getItem('embeddingModelKey');
+                const embeddingModelProvider = localStorage.getItem(
+                        "embeddingModelProviderId",
+                );
+                const embeddingModel =
+                        localStorage.getItem("embeddingModelKey");
 
-    data.append('embedding_model_provider_id', embeddingModelProvider!);
-    data.append('embedding_model_key', embeddingModel!);
+                data.append(
+                        "embedding_model_provider_id",
+                        embeddingModelProvider || "",
+                );
+                data.append("embedding_model_key", embeddingModel || "");
 
-    const res = await fetch(`/api/uploads`, {
-      method: 'POST',
-      body: data,
-    });
+                try {
+                        const res = await fetch(`/api/uploads`, {
+                                method: "POST",
+                                body: data,
+                        });
 
-    const resData = await res.json();
+                        const resData = await res.json();
+                        setFiles([...files, ...resData.files]);
+                        setFileIds([
+                                ...fileIds,
+                                ...resData.files.map(
+                                        (file: any) => file.fileId,
+                                ),
+                        ]);
+                } catch (err) {
+                        console.error("Upload error:", err);
+                } finally {
+                        setLoading(false);
+                }
+        };
 
-    setFiles([...files, ...resData.files]);
-    setFileIds([...fileIds, ...resData.files.map((file: any) => file.fileId)]);
-    setLoading(false);
-  };
+        if (loading) {
+                return (
+                        <div className="p-2 rounded-lg text-black/30 dark:text-white/30">
+                                <LoaderCircle
+                                        size={16}
+                                        className="text-[#24A0ED] animate-spin"
+                                />
+                        </div>
+                );
+        }
 
-  return loading ? (
-    <div className="active:border-none hover:bg-light-200 hover:dark:bg-dark-200 p-2 rounded-lg focus:outline-none text-black/50 dark:text-white/50 transition duration-200">
-      <LoaderCircle size={16} className="text-sky-500 animate-spin" />
-    </div>
-  ) : files.length > 0 ? (
-    <Popover className="relative w-full max-w-[15rem] md:max-w-md lg:max-w-lg">
-      {({ open }) => (
-        <>
-          <PopoverButton
-            type="button"
-            className="active:border-none hover:bg-light-200 hover:dark:bg-dark-200 p-2 rounded-lg focus:outline-none headless-open:text-black dark:headless-open:text-white text-black/50 dark:text-white/50 active:scale-95 transition duration-200 hover:text-black dark:hover:text-white"
-          >
-            <File size={16} className="text-sky-500" />
-          </PopoverButton>
-          <AnimatePresence>
-            {open && (
-              <PopoverPanel
-                className="absolute z-10 w-64 md:w-[350px] right-0"
-                static
-              >
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.9 }}
-                  transition={{ duration: 0.1, ease: 'easeOut' }}
-                  className="origin-top-right bg-light-primary dark:bg-dark-primary border rounded-md border-light-200 dark:border-dark-200 w-full max-h-[200px] md:max-h-none overflow-y-auto flex flex-col"
-                >
-                  <div className="flex flex-row items-center justify-between px-3 py-2">
-                    <h4 className="text-black/70 dark:text-white/70 text-sm">
-                      Attached files
-                    </h4>
-                    <div className="flex flex-row items-center space-x-4">
-                      <button
+        if (files.length > 0) {
+                return (
+                        <div className="w-full">
+                                <div className="flex flex-wrap gap-1.5 py-1">
+                                        {files.map((file, i) => (
+                                                <div
+                                                        key={i}
+                                                        className="flex items-center gap-1.5 bg-light-secondary dark:bg-dark-secondary rounded-lg px-2 py-1 text-xs text-black/60 dark:text-white/60 max-w-[180px]"
+                                                >
+                                                        {isImageFile(
+                                                                file.fileName,
+                                                        ) ? (
+                                                                <ImageIcon
+                                                                        size={
+                                                                                12
+                                                                        }
+                                                                        className="text-[#24A0ED] flex-shrink-0"
+                                                                />
+                                                        ) : (
+                                                                <File
+                                                                        size={
+                                                                                12
+                                                                        }
+                                                                        className="text-[#24A0ED] flex-shrink-0"
+                                                                />
+                                                        )}
+                                                        <span className="truncate">
+                                                                {file.fileName
+                                                                        .length >
+                                                                20
+                                                                        ? file.fileName
+                                                                                  .replace(
+                                                                                          /\.\w+$/,
+                                                                                          "",
+                                                                                  )
+                                                                                  .substring(
+                                                                                          0,
+                                                                                          20,
+                                                                                  ) +
+                                                                          "..." +
+                                                                          file.fileExtension
+                                                                        : file.fileName}
+                                                        </span>
+                                                        <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                        const newFiles =
+                                                                                files.filter(
+                                                                                        (
+                                                                                                _,
+                                                                                                idx,
+                                                                                        ) =>
+                                                                                                idx !==
+                                                                                                i,
+                                                                                );
+                                                                        const newFileIds =
+                                                                                fileIds.filter(
+                                                                                        (
+                                                                                                _,
+                                                                                                idx,
+                                                                                        ) =>
+                                                                                                idx !==
+                                                                                                i,
+                                                                                );
+                                                                        setFiles(
+                                                                                newFiles,
+                                                                        );
+                                                                        setFileIds(
+                                                                                newFileIds,
+                                                                        );
+                                                                }}
+                                                                className="text-black/30 dark:text-white/30 hover:text-black/60 dark:hover:text-white/60 transition-colors"
+                                                        >
+                                                                <X size={10} />
+                                                        </button>
+                                                </div>
+                                        ))}
+                                        <button
+                                                type="button"
+                                                onClick={() =>
+                                                        fileInputRef.current.click()
+                                                }
+                                                className="flex items-center gap-1 text-[#24A0ED] hover:bg-[#24A0ED]/10 rounded-lg px-2 py-1 text-xs transition-colors"
+                                        >
+                                                <Plus size={12} />
+                                                <span>Add</span>
+                                        </button>
+                                </div>
+                                <input
+                                        type="file"
+                                        onChange={handleChange}
+                                        ref={fileInputRef}
+                                        accept={ALL_TYPES.join(",")}
+                                        multiple
+                                        hidden
+                                />
+                        </div>
+                );
+        }
+
+        return (
+                <button
                         type="button"
                         onClick={() => fileInputRef.current.click()}
-                        className="flex flex-row items-center space-x-1 text-black/70 dark:text-white/70 hover:text-black hover:dark:text-white transition duration-200 focus:outline-none"
-                      >
+                        className="flex items-center justify-center p-2 rounded-lg text-black/30 dark:text-white/30 hover:text-black/60 dark:hover:text-white/60 hover:bg-light-secondary dark:hover:bg-dark-secondary transition-all duration-200 active:scale-95"
+                >
                         <input
-                          type="file"
-                          onChange={handleChange}
-                          ref={fileInputRef}
-                          accept=".pdf,.docx,.txt"
-                          multiple
-                          hidden
+                                type="file"
+                                onChange={handleChange}
+                                ref={fileInputRef}
+                                accept={ALL_TYPES.join(",")}
+                                multiple
+                                hidden
                         />
-                        <Plus size={16} />
-                        <p className="text-xs">Add</p>
-                      </button>
-                      <button
-                        onClick={() => {
-                          setFiles([]);
-                          setFileIds([]);
-                        }}
-                        className="flex flex-row items-center space-x-1 text-black/70 dark:text-white/70 hover:text-black hover:dark:text-white transition duration-200 focus:outline-none"
-                      >
-                        <Trash size={13} />
-                        <p className="text-xs">Clear</p>
-                      </button>
-                    </div>
-                  </div>
-                  <div className="h-[0.5px] mx-2 bg-white/10" />
-                  <div className="flex flex-col items-center">
-                    {files.map((file, i) => (
-                      <div
-                        key={i}
-                        className="flex flex-row items-center justify-start w-full space-x-3 p-3"
-                      >
-                        <div className="bg-light-100 dark:bg-dark-100 flex items-center justify-center w-9 h-9 rounded-md">
-                          <File
-                            size={16}
-                            className="text-black/70 dark:text-white/70"
-                          />
-                        </div>
-                        <p className="text-black/70 dark:text-white/70 text-xs">
-                          {file.fileName.length > 25
-                            ? file.fileName
-                                .replace(/\.\w+$/, '')
-                                .substring(0, 25) +
-                              '...' +
-                              file.fileExtension
-                            : file.fileName}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </motion.div>
-              </PopoverPanel>
-            )}
-          </AnimatePresence>
-        </>
-      )}
-    </Popover>
-  ) : (
-    <button
-      type="button"
-      onClick={() => fileInputRef.current.click()}
-      className={cn(
-        'flex items-center justify-center active:border-none hover:bg-light-200 hover:dark:bg-dark-200 p-2 rounded-lg focus:outline-none headless-open:text-black dark:headless-open:text-white text-black/50 dark:text-white/50 active:scale-95 transition duration-200 hover:text-black dark:hover:text-white',
-      )}
-    >
-      <input
-        type="file"
-        onChange={handleChange}
-        ref={fileInputRef}
-        accept=".pdf,.docx,.txt"
-        multiple
-        hidden
-      />
-      <Paperclip size={16} />
-    </button>
-  );
+                        <Paperclip size={16} />
+                </button>
+        );
 };
 
 export default Attach;
