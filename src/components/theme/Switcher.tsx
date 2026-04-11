@@ -25,7 +25,7 @@ const ThemeSwitcher = ({ className }: { className?: string }) => {
 
         if (!mounted) {
                 return (
-                        <button className={`p-2 rounded-lg ${className || ""}`}>
+                        <button className={`min-h-[44px] min-w-[44px] flex items-center justify-center p-2 rounded-lg ${className || ""}`} aria-label="Toggle theme">
                                 <div className="w-4 h-4" />
                         </button>
                 );
@@ -34,13 +34,13 @@ const ThemeSwitcher = ({ className }: { className?: string }) => {
         return (
                 <button
                         onClick={handleThemeSwitch}
-                        className={`p-2 rounded-lg hover:bg-light-secondary dark:hover:bg-dark-secondary transition-colors duration-200 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white ${className || ""}`}
-                        title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+                        className={`min-h-[44px] min-w-[44px] flex items-center justify-center p-2 rounded-lg hover:bg-light-secondary dark:hover:bg-dark-secondary transition-colors duration-200 text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 dark:focus-visible:ring-offset-dark-primary ${className || ""}`}
+                        aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
                 >
                         {theme === "dark" ? (
-                                <Sun size={16} />
+                                <Sun size={16} aria-hidden="true" />
                         ) : (
-                                <Moon size={16} />
+                                <Moon size={16} aria-hidden="true" />
                         )}
                 </button>
         );

@@ -7,10 +7,9 @@ import {
         ClockIcon,
         FileText,
         Globe2Icon,
-        Plus,
 } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 
 export interface Chat {
         id: string;
@@ -23,8 +22,17 @@ export interface Chat {
 const Page = () => {
         const [chats, setChats] = useState<Chat[]>([]);
         const [loading, setLoading] = useState(true);
+        const [elapsedMs, setElapsedMs] = useState(0);
+        const [startTime, setStartTime] = useState<number | null>(null);
 
         useEffect(() => {
+                const now = Date.now();
+                setStartTime(now);
+
+                const interval = setInterval(() => {
+                        setElapsedMs(Date.now() - now);
+                }, 100);
+
                 const fetchChats = async () => {
                         setLoading(true);
 
@@ -39,20 +47,29 @@ const Page = () => {
 
                         setChats(data.chats);
                         setLoading(false);
+                        clearInterval(interval);
                 };
 
                 fetchChats();
+
+                return () => clearInterval(interval);
         }, []);
+
+        const formatElapsed = (ms: number) => {
+                const seconds = (ms / 1000).toFixed(1);
+                return `${seconds}s`;
+        };
 
         return (
                 <div>
                         <div className="flex flex-col pt-8 pb-4">
                                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                                         <div className="flex items-center gap-3">
-                                                <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-[#24A0ED]/10">
+                                                <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-[var(--accent)]/10">
                                                         <BookOpenText
                                                                 size={22}
-                                                                className="text-[#24A0ED]"
+                                                                className="text-[var(--accent)]"
+                                                                aria-hidden="true"
                                                         />
                                                 </div>
                                                 <div>
@@ -70,6 +87,7 @@ const Page = () => {
                                                 <span className="inline-flex items-center gap-1 rounded-full border border-light-200 dark:border-dark-200 px-2.5 py-1">
                                                         <BookOpenText
                                                                 size={12}
+                                                                aria-hidden="true"
                                                         />
                                                         {loading
                                                                 ? "…"
@@ -80,8 +98,11 @@ const Page = () => {
                         </div>
 
                         {loading ? (
-                                <div className="flex items-center justify-center min-h-[60vh]">
-                                        <div className="w-6 h-6 border-2 border-light-200 dark:border-dark-200 border-t-[#24A0ED] rounded-full animate-spin" />
+                                <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3" role="status" aria-label="Loading library">
+                                        <div className="w-6 h-6 border-2 border-light-200 dark:border-dark-200 border-t-[var(--accent)] rounded-full animate-spin" />
+                                        <p className="text-xs text-black/40 dark:text-white/40 tabular-nums">
+                                                Loading chats… {formatElapsed(elapsedMs)}
+                                        </p>
                                 </div>
                         ) : chats.length === 0 ? (
                                 <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
@@ -89,6 +110,7 @@ const Page = () => {
                                                 <BookOpenText
                                                         className="text-black/40 dark:text-white/40"
                                                         size={20}
+                                                        aria-hidden="true"
                                                 />
                                         </div>
                                         <p className="text-black/50 dark:text-white/50 text-sm font-medium">
@@ -97,7 +119,7 @@ const Page = () => {
                                         <p className="text-black/30 dark:text-white/30 text-sm mt-1">
                                                 <Link
                                                         href="/"
-                                                        className="text-[#24A0ED] hover:underline"
+                                                        className="text-[var(--accent)] hover:underline"
                                                 >
                                                         Start a new chat
                                                 </Link>{" "}
@@ -113,48 +135,47 @@ const Page = () => {
                                                                         .length ===
                                                                 0
                                                                         ? null
-                                                                        : chat
-                                                                                    .sources
-                                                                                    .length <=
-                                                                            2
-                                                                          ? chat.sources
-                                                                                    .map(
-                                                                                            (
-                                                                                                    s,
-                                                                                            ) =>
-                                                                                                    s
-                                                                                                            .charAt(
-                                                                                                                    0,
-                                                                                                            )
-                                                                                                            .toUpperCase() +
-                                                                                                    s.slice(
-                                                                                                            1,
-                                                                                                    ),
-                                                                                    )
-                                                                                    .join(
-                                                                                            ", ",
-                                                                                    )
-                                                                          : `${chat.sources
-                                                                                    .slice(
-                                                                                            0,
-                                                                                            2,
-                                                                                    )
-                                                                                    .map(
-                                                                                            (
-                                                                                                    s,
-                                                                                            ) =>
-                                                                                                    s
-                                                                                                            .charAt(
-                                                                                                                    0,
-                                                                                                            )
-                                                                                                            .toUpperCase() +
-                                                                                                    s.slice(
-                                                                                                            1,
-                                                                                                    ),
-                                                                                    )
-                                                                                    .join(
-                                                                                            ", ",
-                                                                                    )} +${chat.sources.length - 2}`;
+                                                                        : chat.sources
+                                                                                        .length <=
+                                                                                2
+                                                                                ? chat.sources
+                                                                                                .map(
+                                                                                                        (
+                                                                                                                s,
+                                                                                                        ) =>
+                                                                                                                s
+                                                                                                                        .charAt(
+                                                                                                                                0,
+                                                                                                                        )
+                                                                                                                        .toUpperCase() +
+                                                                                                                s.slice(
+                                                                                                                        1,
+                                                                                                                ),
+                                                                                                )
+                                                                                                .join(
+                                                                                                        ", ",
+                                                                                                )
+                                                                                : `${chat.sources
+                                                                                                .slice(
+                                                                                                        0,
+                                                                                                        2,
+                                                                                                )
+                                                                                                .map(
+                                                                                                        (
+                                                                                                                s,
+                                                                                                        ) =>
+                                                                                                                s
+                                                                                                                        .charAt(
+                                                                                                                                0,
+                                                                                                                        )
+                                                                                                                        .toUpperCase() +
+                                                                                                                s.slice(
+                                                                                                                        1,
+                                                                                                                ),
+                                                                                                )
+                                                                                                .join(
+                                                                                                        ", ",
+                                                                                                )} +${chat.sources.length - 2}`;
 
                                                         return (
                                                                 <div
@@ -166,7 +187,7 @@ const Page = () => {
                                                                         <div className="flex items-start justify-between gap-3">
                                                                                 <Link
                                                                                         href={`/c/${chat.id}`}
-                                                                                        className="flex-1 text-black dark:text-white text-sm sm:text-base font-medium leading-snug line-clamp-2 group-hover:text-[#24A0ED] transition-colors duration-200"
+                                                                                        className="flex-1 text-black dark:text-white text-sm sm:text-base font-medium leading-snug line-clamp-2 group-hover:text-[var(--accent)] transition-colors duration-200"
                                                                                         title={
                                                                                                 chat.title
                                                                                         }
@@ -196,6 +217,7 @@ const Page = () => {
                                                                                                 size={
                                                                                                         12
                                                                                                 }
+                                                                                                aria-hidden="true"
                                                                                         />
                                                                                         {formatTimeDifference(
                                                                                                 new Date(),
@@ -210,6 +232,7 @@ const Page = () => {
                                                                                                         size={
                                                                                                                 11
                                                                                                         }
+                                                                                                        aria-hidden="true"
                                                                                                 />
                                                                                                 {
                                                                                                         sourcesLabel
@@ -225,6 +248,7 @@ const Page = () => {
                                                                                                         size={
                                                                                                                 11
                                                                                                         }
+                                                                                                        aria-hidden="true"
                                                                                                 />
                                                                                                 {
                                                                                                         chat

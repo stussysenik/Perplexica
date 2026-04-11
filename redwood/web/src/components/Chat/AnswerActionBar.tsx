@@ -12,8 +12,7 @@
  */
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { phoenixGql } from 'src/lib/phoenix'
-import { stripMarkdown } from 'src/lib/renderMarkdown'
-import { slugify } from 'src/lib/renderMarkdown'
+import { stripMarkdown, slugify } from 'src/lib/renderMarkdown'
 import type { Source } from 'src/lib/useSearch'
 
 // ---------------------------------------------------------------------------
@@ -90,36 +89,86 @@ function ActionButton({
 // 1. Copy
 // ---------------------------------------------------------------------------
 
-function CopyButton({ answer }: { answer: string }) {
-  const [copied, setCopied] = useState(false)
+function CopyButton({ answer, sources }: { answer: string; sources: Source[] }) {
+  const [copied, setCopied] = useState<string | null>(null)
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
 
-  const handleCopy = useCallback(async () => {
-    try {
-      await copyToClipboard(answer)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    } catch {
-      // Silently fail -- nothing useful we can show the user here.
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false)
+      }
     }
-  }, [answer])
+    if (open) document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [open])
+
+  const handleCopy = useCallback(async (mode: 'formatted' | 'plain' | 'with-sources') => {
+    try {
+      let text = answer
+      if (mode === 'plain') {
+        text = stripMarkdown(answer)
+      } else if (mode === 'with-sources') {
+        text = answer
+        if (sources.length > 0) {
+          text += '\n\n---\nSources:\n'
+          sources.forEach((s, i) => {
+            const title = s.metadata?.title || ''
+            const url = s.metadata?.url || ''
+            text += `[${i + 1}] ${title}${title ? ' — ' : ''}${url}\n`
+          })
+        }
+      }
+      await copyToClipboard(text)
+      setCopied(mode)
+      setTimeout(() => setCopied(null), 2000)
+      setOpen(false)
+    } catch {
+      // Silently fail
+    }
+  }, [answer, sources])
 
   return (
-    <ActionButton onClick={handleCopy} label={copied ? 'Copied!' : 'Copy'}>
-      {/* Clipboard icon */}
-      <svg
-        width="16"
-        height="16"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-      </svg>
-    </ActionButton>
+    <div className="relative" ref={ref}>
+      <ActionButton onClick={() => setOpen(!open)} label={copied ? 'Copied!' : 'Copy'}>
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+        </svg>
+      </ActionButton>
+      {open && (
+        <div className="absolute left-0 top-full mt-1 z-50 min-w-[12rem] bg-white dark:bg-[#1a1a1a] border border-[var(--border-default)] rounded-spine shadow-lg py-1">
+          <button
+            onClick={() => handleCopy('formatted')}
+            className="w-full text-left px-3 py-2 text-small hover:bg-[var(--surface-whisper)] text-[var(--text-primary)] transition-colors duration-[180ms]"
+          >
+            Copy with formatting
+          </button>
+          <button
+            onClick={() => handleCopy('plain')}
+            className="w-full text-left px-3 py-2 text-small hover:bg-[var(--surface-whisper)] text-[var(--text-primary)] transition-colors duration-[180ms]"
+          >
+            Copy as plain text
+          </button>
+          <button
+            onClick={() => handleCopy('with-sources')}
+            className="w-full text-left px-3 py-2 text-small hover:bg-[var(--surface-whisper)] text-[var(--text-primary)] transition-colors duration-[180ms]"
+          >
+            Copy with sources
+          </button>
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -386,6 +435,56 @@ function ExportPdfButton({
   )
 }
 
+function ExportMarkdownButton({
+  answer,
+  query,
+  sources,
+}: {
+  answer: string
+  query: string
+  sources: Source[]
+}) {
+  const handleExport = useCallback(() => {
+    let content = `# ${query}\n\n${answer}`
+    if (sources.length > 0) {
+      content += '\n\n---\n\n## Sources\n\n'
+      sources.forEach((src, idx) => {
+        const title = src.metadata?.title || 'Source'
+        const url = src.metadata?.url || ''
+        content += `${idx + 1}. [${title}](${url})\n`
+      })
+    }
+    const blob = new Blob([content], { type: 'text/markdown' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `perplexica-${slugify(query) || 'export'}.md`
+    a.click()
+    URL.revokeObjectURL(url)
+  }, [answer, query, sources])
+
+  return (
+    <ActionButton onClick={handleExport} label="Markdown">
+      <svg
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+        <polyline points="14 2 14 8 20 8" />
+        <line x1="16" y1="13" x2="8" y2="13" />
+        <line x1="16" y1="17" x2="8" y2="17" />
+        <polyline points="10 9 9 9 8 9" />
+      </svg>
+    </ActionButton>
+  )
+}
+
 // ---------------------------------------------------------------------------
 // 5. Text-to-Speech
 // ---------------------------------------------------------------------------
@@ -501,9 +600,10 @@ const AnswerActionBar = ({
 }: Props) => {
   return (
     <div className="flex flex-wrap items-center gap-4">
-      <CopyButton answer={answer} />
+      <CopyButton answer={answer} sources={sources} />
       <ShareButton messageId={messageId} query={query} />
       <BookmarkButton messageId={messageId} />
+      <ExportMarkdownButton answer={answer} query={query} sources={sources} />
       <ExportPdfButton answer={answer} query={query} sources={sources} />
       <TtsButton answer={answer} />
     </div>

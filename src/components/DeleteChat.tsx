@@ -61,9 +61,10 @@ const DeleteChat = ({
         onClick={() => {
           setConfirmationDialogOpen(true);
         }}
-        className="bg-transparent text-red-400 hover:scale-105 transition duration-200"
+        aria-label="Delete chat"
+        className="min-h-[44px] min-w-[44px] flex items-center justify-center p-2 bg-transparent text-red-400 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500/50 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-dark-primary"
       >
-        <Trash size={17} />
+        <Trash size={16} aria-hidden="true" />
       </button>
       <Transition appear show={confirmationDialogOpen} as={Fragment}>
         <Dialog
@@ -101,13 +102,13 @@ const DeleteChat = ({
                           setConfirmationDialogOpen(false);
                         }
                       }}
-                      className="text-black/50 dark:text-white/50 text-sm hover:text-black/70 hover:dark:text-white/70 transition duration-200"
+                      className="px-4 py-2 text-black/50 dark:text-white/50 text-sm hover:text-black/70 hover:dark:text-white/70 hover:bg-light-200 dark:hover:bg-dark-200 rounded-lg transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
                     >
                       Cancel
                     </button>
                     <button
                       onClick={handleDelete}
-                      className="text-red-400 text-sm hover:text-red-500 transition duration200"
+                      className="px-4 py-2 text-red-400 text-sm hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500/50"
                     >
                       Delete
                     </button>

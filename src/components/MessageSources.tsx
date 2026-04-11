@@ -90,8 +90,8 @@ const SourceCard = ({
           </button>
           {expanded && (
             <div
-              className="mt-2 p-2 rounded bg-light-200/50 dark:bg-dark-200/50 border-l-2 border-blue-400/50"
-              data-testid={`source-content-${index}`}
+             className="mt-2 p-2 rounded bg-light-200/50 dark:bg-dark-200/50"
+             data-testid={`source-content-${index}`}
             >
               <p className="text-[11px] leading-relaxed text-black/70 dark:text-white/70 whitespace-pre-wrap break-words">
                 {truncatedContent}

@@ -82,7 +82,7 @@ const Attach = () => {
                         <div className="p-2 rounded-lg text-black/30 dark:text-white/30">
                                 <LoaderCircle
                                         size={16}
-                                        className="text-[#24A0ED] animate-spin"
+                                        className="text-[var(--accent)] animate-spin"
                                 />
                         </div>
                 );
@@ -104,14 +104,14 @@ const Attach = () => {
                                                                         size={
                                                                                 12
                                                                         }
-                                                                        className="text-[#24A0ED] flex-shrink-0"
+                                                                        className="text-[var(--accent)] flex-shrink-0"
                                                                 />
                                                         ) : (
                                                                 <File
                                                                         size={
                                                                                 12
                                                                         }
-                                                                        className="text-[#24A0ED] flex-shrink-0"
+                                                                        className="text-[var(--accent)] flex-shrink-0"
                                                                 />
                                                         )}
                                                         <span className="truncate">
@@ -170,7 +170,7 @@ const Attach = () => {
                                                 onClick={() =>
                                                         fileInputRef.current.click()
                                                 }
-                                                className="flex items-center gap-1 text-[#24A0ED] hover:bg-[#24A0ED]/10 rounded-lg px-2 py-1 text-xs transition-colors"
+                                                className="flex items-center gap-1 text-[var(--accent)] hover:bg-[var(--accent)]/10 rounded-lg px-2 py-1 text-xs transition-colors"
                                         >
                                                 <Plus size={12} />
                                                 <span>Add</span>

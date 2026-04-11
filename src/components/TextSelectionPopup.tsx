@@ -76,7 +76,7 @@ const TextSelectionPopup = ({ containerRef, onAskFollowUp }: TextSelectionPopupP
           setSelectedText('');
           window.getSelection()?.removeAllRanges();
         }}
-        className="flex items-center gap-1.5 px-3 py-1.5 bg-[#24A0ED] text-white text-xs font-medium rounded-full shadow-lg shadow-[#24A0ED]/25 hover:bg-[#1a8cd8] transition-colors duration-150 whitespace-nowrap"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--accent)] text-white text-xs font-medium rounded-full shadow-lg shadow-[var(--accent)]/25 hover:opacity-90 transition-colors duration-150 whitespace-nowrap"
       >
         <MessageSquareQuote size={12} />
         Ask follow-up

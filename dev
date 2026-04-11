@@ -36,6 +36,13 @@ free_port() {
 free_port 4000
 free_port 8910
 
+# Load env vars (local overrides take precedence)
+if [[ -f "$ROOT/phoenix/.env.local" ]]; then
+  set -a
+  source "$ROOT/phoenix/.env.local"
+  set +a
+fi
+
 echo -e "${CYAN}[phoenix]${NC} Starting on :4000"
 echo -e "${YELLOW}[redwood]${NC} Starting on :8910"
 echo ""

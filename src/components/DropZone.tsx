@@ -98,14 +98,15 @@ const DropZone = ({ children }: { children: ReactNode }) => {
                         className="relative w-full"
                 >
                         {isDragging && (
-                                <div className="absolute inset-0 z-50 flex flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-[#24A0ED] bg-[#24A0ED]/5 dark:bg-[#24A0ED]/10 backdrop-blur-sm">
-                                        <div className="flex items-center justify-center w-12 h-12 rounded-full bg-[#24A0ED]/10">
+                                <div className="absolute inset-0 z-50 flex flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-[var(--accent)] bg-[var(--accent)]/5 dark:bg-[var(--accent)]/10 backdrop-blur-sm">
+                                        <div className="flex items-center justify-center w-12 h-12 rounded-full bg-[var(--accent)]/10">
                                                 <Upload
                                                         size={24}
-                                                        className="text-[#24A0ED]"
+                                                        className="text-[var(--accent)]"
+                                                        aria-hidden="true"
                                                 />
                                         </div>
-                                        <p className="text-sm font-medium text-[#24A0ED]">
+                                        <p className="text-sm font-medium text-[var(--accent)]">
                                                 Drop files here
                                         </p>
                                         <p className="text-xs text-black/50 dark:text-white/50">

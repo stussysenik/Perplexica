@@ -13,6 +13,11 @@ data/uploads/
 .local/
 /tmp/
 snippets/
+test-results/
+playwright-report/
+
+# SearXNG runtime
+searxng/searx-pyenv/
 
 # Phoenix
 phoenix/_build/

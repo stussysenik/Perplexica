@@ -1,0 +1,15 @@
+ALTER TABLE `messages` ADD COLUMN `originalQuery` text;
+ALTER TABLE `messages` ADD COLUMN `queryEdited` integer DEFAULT 0;
+ALTER TABLE `messages` ADD COLUMN `chatModelProvider` text;
+ALTER TABLE `messages` ADD COLUMN `chatModelKey` text;
+ALTER TABLE `messages` ADD COLUMN `embeddingModelProvider` text;
+ALTER TABLE `messages` ADD COLUMN `embeddingModelKey` text;
+ALTER TABLE `messages` ADD COLUMN `optimizationMode` text;
+ALTER TABLE `messages` ADD COLUMN `searchSources` text DEFAULT '[]';
+ALTER TABLE `messages` ADD COLUMN `sourceUrls` text DEFAULT '[]';
+ALTER TABLE `messages` ADD COLUMN `responseDurationMs` integer;
+ALTER TABLE `messages` ADD COLUMN `responseTimestamp` text;
+ALTER TABLE `messages` ADD COLUMN `version` integer DEFAULT 1;
+ALTER TABLE `messages` ADD COLUMN `previousVersionId` text;
+ALTER TABLE `messages` ADD COLUMN `isRewrite` integer DEFAULT 0;
+ALTER TABLE `messages` ADD COLUMN `systemInstructions` text;

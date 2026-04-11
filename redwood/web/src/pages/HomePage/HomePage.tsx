@@ -70,7 +70,7 @@ function EmptyState({ onSend }: { onSend: (q: string) => void }) {
   ]
 
   return (
-    <div className="flex flex-col items-center justify-center h-full px-4 pb-20 lg:pb-0">
+    <div className="flex flex-col items-center justify-center h-full min-h-[100dvh] px-4 pb-20 lg:pb-0 lg:min-h-0">
       {/* Wordmark — no logo badge, just typography */}
       <h1 className="text-display tracking-tight text-[var(--text-primary)] mb-2">
         Perplexica

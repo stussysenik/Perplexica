@@ -6,7 +6,7 @@ import SessionManager from '@/lib/session';
 import { ChatTurnMessage } from '@/lib/types';
 import { SearchSources } from '@/lib/agents/search/types';
 import db from '@/lib/db';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { chats, messages } from '@/lib/db/schema';
 import UploadManager from '@/lib/uploads/manager';
 
@@ -45,6 +45,10 @@ const bodySchema = z.object({
   chatModel: chatModelSchema,
   embeddingModel: embeddingModelSchema,
   systemInstructions: z.string().nullable().optional().default(''),
+  isRewrite: z.boolean().optional().default(false),
+  originalQuery: z.string().nullable().optional(),
+  previousMessageId: z.string().nullable().optional(),
+  parentId: z.string().nullable().optional(),
 });
 
 type Body = z.infer<typeof bodySchema>;
@@ -151,6 +155,7 @@ export const POST = async (req: Request) => {
 
     const agent = new SearchAgent();
     const session = SessionManager.createSession();
+    const startTime = Date.now();
 
     const responseStream = new TransformStream();
     const writer = responseStream.writable.getWriter();
@@ -186,29 +191,55 @@ export const POST = async (req: Request) => {
             ),
           );
         }
-      } else if (event === 'end') {
-        writer.write(
-          encoder.encode(
-            JSON.stringify({
-              type: 'messageEnd',
-            }) + '\n',
-          ),
-        );
-        
-        db.insert(messages)
-          .values({
-            messageId: body.message.messageId,
-            chatId: body.message.chatId,
-            backendId: session.id,
-            query: body.message.content,
-            createdAt: new Date().toISOString(),
-            responseBlocks: session.getAllBlocks(),
-            status: 'completed',
-          })
-          .execute()
-          .catch((err) => {
-            console.error('Failed to save message to DB:', err);
-          });
+        } else if (event === 'end') {
+          const responseTimestamp = new Date().toISOString();
+          const responseDurationMs = Date.now() - startTime;
+
+          writer.write(
+            encoder.encode(
+              JSON.stringify({
+                type: 'messageEnd',
+              }) + '\n',
+            ),
+          );
+          
+          db.select({ count: sql<number>`count(*)` })
+            .from(messages)
+            .where(eq(messages.chatId, body.message.chatId))
+            .execute()
+            .then((r) => {
+              const versionCount = r[0]?.count ?? 0;
+
+              db.insert(messages)
+                .values({
+                  messageId: body.message.messageId,
+                  chatId: body.message.chatId,
+                  backendId: session.id,
+                  query: body.message.content,
+                  createdAt: new Date().toISOString(),
+                  responseBlocks: session.getAllBlocks(),
+                  status: 'completed',
+                  originalQuery: body.isRewrite ? body.originalQuery : null,
+                  queryEdited: body.isRewrite ? true : false,
+                  chatModelProvider: body.chatModel.providerId,
+                  chatModelKey: body.chatModel.key,
+                  embeddingModelProvider: body.embeddingModel.providerId,
+                  embeddingModelKey: body.embeddingModel.key,
+                  optimizationMode: body.optimizationMode,
+                  searchSources: body.sources,
+                  responseDurationMs,
+                  responseTimestamp,
+                  version: versionCount + 1,
+              isRewrite: body.isRewrite ?? false,
+              previousVersionId: body.previousMessageId ?? null,
+              parentId: body.parentId ?? null,
+              systemInstructions: body.systemInstructions || null,
+                })
+                .execute()
+                .catch((err) => {
+                  console.error('Failed to save message to DB:', err);
+                });
+            });
 
         writer.close();
         session.removeAllListeners();

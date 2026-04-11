@@ -9,6 +9,7 @@ import SettingsButtonMobile from "./Settings/SettingsButtonMobile";
 import { Block } from "@/lib/types";
 import Loader from "./ui/Loader";
 import DropZone from "./DropZone";
+import { useEffect, useState } from "react";
 
 export interface BaseMessage {
         chatId: string;
@@ -21,6 +22,11 @@ export interface Message extends BaseMessage {
         query: string;
         responseBlocks: Block[];
         status: "answering" | "completed" | "error";
+        parentId?: string | null;
+        branchIndex?: number;
+        siblings?: Message[];
+        isCompacted?: boolean;
+        compactSummary?: string;
 }
 
 export interface File {
@@ -36,6 +42,16 @@ export interface Widget {
 
 const ChatWindow = () => {
         const { hasError, notFound, messages, isReady } = useChat();
+        const [elapsedMs, setElapsedMs] = useState(0);
+
+        useEffect(() => {
+                if (isReady) return;
+                const now = Date.now();
+                const interval = setInterval(() => {
+                        setElapsedMs(Date.now() - now);
+                }, 100);
+                return () => clearInterval(interval);
+        }, [isReady]);
 
         if (hasError) {
                 return (
@@ -74,8 +90,11 @@ const ChatWindow = () => {
                                         </div>
                                 )
                         ) : (
-                                <div className="flex items-center justify-center min-h-screen w-full">
+                                <div className="flex flex-col items-center justify-center min-h-screen w-full gap-3" role="status" aria-label="Initializing chat">
                                         <Loader />
+                                        <p className="text-xs text-black/40 dark:text-white/40 tabular-nums">
+                                                Initializing… {(elapsedMs / 1000).toFixed(1)}s
+                                        </p>
                                 </div>
                         )}
                 </DropZone>

@@ -1,0 +1,27 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8910:8910"
+    environment:
+      - NODE_ENV=production
+      - DATA_DIR=/app/data
+      - NVIDIA_NIM_API_KEY=${NVIDIA_NIM_API_KEY}
+      - BRAVE_SEARCH_API_KEY=${BRAVE_SEARCH_API_KEY}
+      - GLM_API_KEY=${GLM_API_KEY}
+      - GLM_BASE_URL=${GLM_API_KEY:+https://api.z.ai/api/coding/paas/v4}
+    volumes:
+      - perplexica-data:/app/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8910/api/chats"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+volumes:
+  perplexica-data:
+    driver: local

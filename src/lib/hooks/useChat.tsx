@@ -18,6 +18,7 @@ import { MinimalProvider } from '../models/types';
 import { getAutoMediaSearch } from '../config/clientRegistry';
 import { applyPatch } from 'rfc6902';
 import { Widget } from '@/components/ChatWindow';
+import { compactMessages, buildCompactedHistory, shouldCompact } from '../compact';
 
 export type Section = {
   message: Message;
@@ -55,8 +56,12 @@ type ChatContext = {
     message: string,
     messageId?: string,
     rewrite?: boolean,
+    parentId?: string | null,
+    originalQuery?: string | null,
   ) => Promise<void>;
   rewrite: (messageId: string) => void;
+  switchBranch: (messageId: string, branchIndex: number) => void;
+  getSiblings: (messageId: string) => Message[];
   setChatModelProvider: (provider: ChatModelProvider) => void;
   setEmbeddingModelProvider: (provider: EmbeddingModelProvider) => void;
 };
@@ -257,6 +262,8 @@ export const chatContext = createContext<ChatContext>({
   embeddingModelProvider: { key: '', providerId: '' },
   researchEnded: false,
   rewrite: () => {},
+  switchBranch: () => {},
+  getSiblings: () => [],
   sendMessage: async () => {},
   setFileIds: () => {},
   setFiles: () => {},
@@ -525,15 +532,63 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
 
   const rewrite = (messageId: string) => {
     const index = messages.findIndex((msg) => msg.messageId === messageId);
-
     if (index === -1) return;
 
-    setMessages((prev) => prev.slice(0, index));
-
-    chatHistory.current = chatHistory.current.slice(0, index * 2);
-
     const messageToRewrite = messages[index];
-    sendMessage(messageToRewrite.query, messageToRewrite.messageId, true);
+    const parentId = index > 0 ? messages[index - 1].messageId : null;
+
+    const existingSiblings = messages.filter(
+      (m) => m.parentId === parentId && m.messageId !== messageId,
+    );
+    const branchIndex = existingSiblings.length;
+
+    sendMessage(messageToRewrite.query, undefined, true, parentId, messageToRewrite.query);
+  };
+
+  const switchBranch = (messageId: string, branchIndex: number) => {
+    const index = messages.findIndex((msg) => msg.messageId === messageId);
+    if (index === -1) return;
+
+    const currentMsg = messages[index];
+    const parentId = currentMsg.parentId;
+
+    const siblings = messages.filter((m) => m.parentId === parentId);
+    const target = siblings[branchIndex];
+    if (!target) return;
+
+    const siblingsBeforeTarget = siblings.filter(
+      (s) => (s.branchIndex ?? 0) < (target.branchIndex ?? 0),
+    );
+    const messagesToKeep = siblingsBeforeTarget.map((s) => s.messageId);
+
+    const beforeSiblings = messages.slice(0, index).filter(
+      (m) => !siblings.some((s) => s.messageId === m.messageId) || messagesToKeep.includes(m.messageId),
+    );
+
+    setMessages((prev) => {
+      const idx = prev.findIndex((m) => m.messageId === messageId);
+      const before = prev.slice(0, idx);
+      const after = prev.slice(idx + 1);
+      return [...before, { ...target, branchIndex }, ...after.filter((m) => !siblings.some((s) => s.messageId === m.messageId))];
+    });
+
+    const newHistory: [string, string][] = [];
+    const msgsUpToTarget = messages.slice(0, messages.findIndex((m) => m.messageId === target.messageId));
+    msgsUpToTarget.forEach((msg) => {
+      newHistory.push(['human', msg.query]);
+      const text = msg.responseBlocks
+        .filter((b): b is Block & { type: 'text' } => b.type === 'text')
+        .map((b) => b.data)
+        .join('\n');
+      if (text) newHistory.push(['assistant', text]);
+    });
+    chatHistory.current = newHistory;
+  };
+
+  const getSiblings = (messageId: string): Message[] => {
+    const msg = messages.find((m) => m.messageId === messageId);
+    if (!msg) return [];
+    return messages.filter((m) => m.parentId === msg.parentId);
   };
 
   useEffect(() => {
@@ -715,11 +770,20 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
     message,
     messageId,
     rewrite = false,
+    parentId = null,
+    originalQuery = null,
   ) => {
     if (loading || !message) return;
     setLoading(true);
     setResearchEnded(false);
     setMessageAppeared(false);
+
+    if (shouldCompact(messagesRef.current)) {
+      const compacted = compactMessages(messagesRef.current);
+      setMessages(compacted);
+      messagesRef.current = compacted;
+      chatHistory.current = buildCompactedHistory(compacted);
+    }
 
     if (messages.length <= 1) {
       window.history.replaceState(null, '', `/c/${chatId}`);
@@ -736,6 +800,13 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
       responseBlocks: [],
       status: 'answering',
       createdAt: new Date(),
+      parentId: parentId ?? (messages.length > 0 ? messages[messages.length - 1].messageId : null),
+      branchIndex: rewrite
+        ? messages.filter(
+            (m) =>
+              m.parentId === (parentId ?? (messages.length > 0 ? messages[messages.length - 1].messageId : null)),
+          ).length
+        : 0,
     };
 
     setMessages((prevMessages) => [...prevMessages, newMessage]);
@@ -773,6 +844,10 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
           providerId: embeddingModelProvider.providerId,
         },
         systemInstructions: localStorage.getItem('systemInstructions'),
+        isRewrite: rewrite,
+        originalQuery: originalQuery,
+        previousMessageId: rewrite ? messageId : null,
+        parentId: parentId ?? (messages.length > 0 ? messages[messages.length - 1].messageId : null),
       }),
     });
 
@@ -827,6 +902,8 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
         setSources,
         setOptimizationMode,
         rewrite,
+        switchBranch,
+        getSiblings,
         sendMessage,
         setChatModelProvider,
         chatModelProvider,

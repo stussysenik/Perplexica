@@ -17,12 +17,23 @@ const nextConfig = {
       },
     ],
   },
-  serverExternalPackages: ['pdf-parse'],
+  serverExternalPackages: ['pdf-parse', 'officeparser', 'better-sqlite3'],
   outputFileTracingIncludes: {
     '/api/**': [
       './node_modules/@napi-rs/canvas/**',
       './node_modules/@napi-rs/canvas-linux-x64-gnu/**',
       './node_modules/@napi-rs/canvas-linux-x64-musl/**',
+    ],
+  },
+  outputFileTracingExcludes: {
+    '/api/**': [
+      './searxng/**',
+      './redwood/**',
+      './phoenix/**',
+      './zig/**',
+      './e2e/**',
+      './docs/**',
+      './openspec/**',
     ],
   },
   env: {

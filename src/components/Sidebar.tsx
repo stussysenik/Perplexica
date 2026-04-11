@@ -39,9 +39,9 @@ const Sidebar = ({ children }: { children: React.ReactNode }) => {
                                 <div className="flex grow flex-col items-center justify-between gap-y-5 bg-light-primary dark:bg-dark-primary border-r border-light-200 dark:border-dark-200 px-2 py-6">
                                         <div className="flex flex-col items-center gap-2">
                                                 <a
-                                                        className="p-2.5 rounded-xl bg-[#24A0ED] text-white hover:bg-[#1a8cd8] transition-all duration-200 shadow-sm"
+                                                        className="p-2.5 rounded-xl bg-[var(--accent)] text-white hover:opacity-90 transition-colors duration-200 shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2"
                                                         href="/"
-                                                        title="New chat"
+                                                        aria-label="New chat"
                                                 >
                                                         <Plus
                                                                 size={18}
@@ -49,6 +49,7 @@ const Sidebar = ({ children }: { children: React.ReactNode }) => {
                                                                 strokeWidth={
                                                                         2.5
                                                                 }
+                                                                aria-hidden="true"
                                                         />
                                                 </a>
                                         </div>
@@ -59,17 +60,17 @@ const Sidebar = ({ children }: { children: React.ReactNode }) => {
                                                                 key={i}
                                                                 href={link.href}
                                                                 className={cn(
-                                                                        "relative flex flex-col items-center justify-center gap-0.5 cursor-pointer w-full py-2.5 rounded-xl transition-all duration-200",
+                                                                        "relative flex flex-col items-center justify-center gap-0.5 cursor-pointer w-full py-2.5 rounded-xl transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2",
                                                                         link.active
-                                                                                ? "text-[#24A0ED]"
+                                                                                ? "text-[var(--accent)]"
                                                                                 : "text-black/40 dark:text-white/40 hover:text-black/70 dark:hover:text-white/70",
                                                                 )}
                                                         >
                                                                 <div
                                                                         className={cn(
-                                                                                "rounded-xl p-2 transition-all duration-200",
+                                                                                "rounded-xl p-2 transition-colors duration-200",
                                                                                 link.active &&
-                                                                                        "bg-[#24A0ED]/10",
+                                                                                        "bg-[var(--accent)]/10",
                                                                                 !link.active &&
                                                                                         "hover:bg-light-secondary dark:hover:bg-dark-secondary",
                                                                         )}
@@ -78,6 +79,7 @@ const Sidebar = ({ children }: { children: React.ReactNode }) => {
                                                                                 size={
                                                                                         20
                                                                                 }
+                                                                                aria-hidden="true"
                                                                         />
                                                                 </div>
                                                                 <p className="text-[10px] font-medium">
@@ -106,12 +108,12 @@ const Sidebar = ({ children }: { children: React.ReactNode }) => {
                                                         className={cn(
                                                                 "relative flex flex-col items-center gap-0.5 py-1.5 px-4 rounded-xl transition-all duration-200",
                                                                 link.active
-                                                                        ? "text-[#24A0ED]"
+                                                                        ? "text-[var(--accent)]"
                                                                         : "text-black/40 dark:text-white/40",
                                                         )}
                                                 >
                                                         {link.active && (
-                                                                <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-5 h-0.5 rounded-full bg-[#24A0ED]" />
+                                                                <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-5 h-0.5 rounded-full bg-[var(--accent)]" />
                                                         )}
                                                         <link.icon size={20} />
                                                         <p className="text-[10px] font-medium">

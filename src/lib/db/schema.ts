@@ -16,6 +16,36 @@ export const messages = sqliteTable('messages', {
   status: text({ enum: ['answering', 'completed', 'error'] }).default(
     'answering',
   ),
+
+  originalQuery: text('originalQuery'),
+  queryEdited: integer('queryEdited', { mode: 'boolean' }).default(false),
+
+  chatModelProvider: text('chatModelProvider'),
+  chatModelKey: text('chatModelKey'),
+  embeddingModelProvider: text('embeddingModelProvider'),
+  embeddingModelKey: text('embeddingModelKey'),
+  optimizationMode: text('optimizationMode'),
+
+  searchSources: text('searchSources', { mode: 'json' })
+    .$type<string[]>()
+    .default(sql`'[]'`),
+  sourceUrls: text('sourceUrls', { mode: 'json' })
+    .$type<string[]>()
+    .default(sql`'[]'`),
+
+  responseDurationMs: integer('responseDurationMs'),
+  responseTimestamp: text('responseTimestamp'),
+
+  version: integer('version').default(1),
+  previousVersionId: text('previousVersionId'),
+  isRewrite: integer('isRewrite', { mode: 'boolean' }).default(false),
+
+  parentId: text('parentId'),
+  branchIndex: integer('branchIndex').default(0),
+  isCompacted: integer('isCompacted', { mode: 'boolean' }).default(false),
+  compactSummary: text('compactSummary'),
+
+  systemInstructions: text('systemInstructions'),
 });
 
 interface DBFile {

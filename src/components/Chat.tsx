@@ -65,7 +65,7 @@ const Chat = () => {
         }, [messages]);
 
         return (
-                <div className="flex flex-col space-y-6 pt-4 pb-48 lg:pb-32">
+                <div className="flex flex-col space-y-8 pt-6 pb-56 lg:pb-40">
                         <AnimatePresence initial={false}>
                                 {sections.map((section, i) => {
                                         const isLast =
@@ -118,7 +118,7 @@ const Chat = () => {
                         <div ref={messageEnd} className="h-0" />
                         {dividerWidth > 0 && (
                                 <div
-                                        className="fixed z-40 bottom-20 lg:bottom-6 left-1/2 -translate-x-1/2 px-4 lg:px-0"
+                                        className="fixed z-40 bottom-24 lg:bottom-8 left-1/2 -translate-x-1/2 px-5 lg:px-0"
                                         style={{
                                                 width: Math.min(
                                                         dividerWidth,

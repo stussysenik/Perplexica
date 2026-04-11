@@ -79,9 +79,10 @@ const ModelSelector = () => {
         <>
           <PopoverButton
             type="button"
-            className="active:border-none hover:bg-light-200  hover:dark:bg-dark-200 p-2 rounded-lg focus:outline-none headless-open:text-black dark:headless-open:text-white text-black/50 dark:text-white/50 active:scale-95 transition duration-200 hover:text-black dark:hover:text-white"
+            aria-label="Select chat model"
+            className="min-h-[44px] min-w-[44px] flex items-center justify-center p-2 rounded-lg focus:outline-none headless-open:text-black dark:headless-open:text-white text-black/50 dark:text-white/50 active:scale-95 transition-colors duration-200 hover:text-black dark:hover:text-white hover:bg-light-200 dark:hover:bg-dark-200 focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
           >
-            <Cpu size={16} className="text-sky-500" />
+            <Cpu size={16} className="text-sky-500" aria-hidden="true" />
           </PopoverButton>
           <AnimatePresence>
             {open && (
@@ -101,13 +102,15 @@ const ModelSelector = () => {
                       <Search
                         size={16}
                         className="absolute left-3 top-1/2 -translate-y-1/2 text-black/40 dark:text-white/40"
+                        aria-hidden="true"
                       />
                       <input
                         type="text"
                         placeholder="Search models..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-8 pr-3 py-2 bg-light-secondary dark:bg-dark-secondary rounded-lg placeholder:text-xs placeholder:-translate-y-[1.5px] text-xs text-black dark:text-white placeholder:text-black/40 dark:placeholder:text-white/40 focus:outline-none border border-transparent transition duration-200"
+                        aria-label="Search models"
+                        className="w-full pl-8 pr-3 py-2 bg-light-secondary dark:bg-dark-secondary rounded-lg placeholder:text-xs placeholder:-translate-y-[1.5px] text-xs text-black dark:text-white placeholder:text-black/40 dark:placeholder:text-white/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] border border-transparent transition-colors duration-200"
                       />
                     </div>
                   </div>

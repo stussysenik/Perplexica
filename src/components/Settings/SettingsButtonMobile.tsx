@@ -8,8 +8,12 @@ const SettingsButtonMobile = () => {
 
   return (
     <>
-      <button className="lg:hidden" onClick={() => setIsOpen(true)}>
-        <Settings size={18} />
+      <button
+        className="min-h-[44px] min-w-[44px] flex items-center justify-center p-2 rounded-lg hover:bg-light-secondary dark:hover:bg-dark-secondary transition-colors duration-200 text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] lg:hidden"
+        onClick={() => setIsOpen(true)}
+        aria-label="Open settings"
+      >
+        <Settings size={18} aria-hidden="true" />
       </button>
       <AnimatePresence>
         {isOpen && <SettingsDialogue isOpen={isOpen} setIsOpen={setIsOpen} />}

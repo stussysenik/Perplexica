@@ -1,6 +1,6 @@
 "use client";
 
-import { Clock, Edit, Share, Trash, FileText, FileDown } from "lucide-react";
+import { Clock, Edit, Share, Trash, FileText, FileDown, FileJson, Table } from "lucide-react";
 import { Message } from "./ChatWindow";
 import { useEffect, useState, Fragment } from "react";
 import { formatTimeDifference } from "@/lib/utils";
@@ -33,19 +33,19 @@ const exportAsMarkdown = (sections: Section[], title: string) => {
         const date = new Date(
                 sections[0].message.createdAt || Date.now(),
         ).toLocaleString();
-        let md = `# 💬 Chat Export: ${title}\n\n`;
+        let md = `# Chat Export: ${title}\n\n`;
         md += `*Exported on: ${date}*\n\n---\n`;
 
         sections.forEach((section, idx) => {
                 md += `\n---\n`;
-                md += `**🧑 User**
+                md += `**User**
 `;
                 md += `*${new Date(section.message.createdAt).toLocaleString()}*\n\n`;
                 md += `> ${section.message.query.replace(/\n/g, "\n> ")}\n`;
 
                 if (section.message.responseBlocks.length > 0) {
                         md += `\n---\n`;
-                        md += `**🤖 Assistant**
+                        md += `**Assistant**
 `;
                         md += `*${new Date(section.message.createdAt).toLocaleString()}*\n\n`;
                         md += `> ${section.message.responseBlocks
@@ -260,15 +260,17 @@ const Navbar = () => {
                                         <div className="flex items-center gap-2 min-w-0 flex-shrink-0">
                                                 <a
                                                         href="/"
-                                                        className="lg:hidden p-2 -ml-1 rounded-lg hover:bg-light-secondary dark:hover:bg-dark-secondary transition-colors duration-200"
+                                                        className="lg:hidden p-2 -ml-1 rounded-lg hover:bg-light-secondary dark:hover:bg-dark-secondary transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+                                                        aria-label="New chat"
                                                 >
                                                         <Edit
                                                                 size={16}
                                                                 className="text-black/50 dark:text-white/50"
+                                                                aria-hidden="true"
                                                         />
                                                 </a>
                                                 <div className="hidden lg:flex items-center gap-1.5 text-black/40 dark:text-white/40">
-                                                        <Clock size={12} />
+                                                        <Clock size={12} aria-hidden="true" />
                                                         <span className="text-[11px]">
                                                                 {timeAgo} ago
                                                         </span>
@@ -284,12 +286,13 @@ const Navbar = () => {
 
                                         <div className="flex items-center gap-0.5 flex-shrink-0">
                                                 <Popover className="relative">
-                                                        <PopoverButton className="p-2 rounded-lg hover:bg-light-secondary dark:hover:bg-dark-secondary transition-colors duration-200">
+                                                        <PopoverButton className="p-2 rounded-lg hover:bg-light-secondary dark:hover:bg-dark-secondary transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]" aria-label="Export conversation">
                                                                 <Share
                                                                         size={
                                                                                 15
                                                                         }
                                                                         className="text-black/40 dark:text-white/40"
+                                                                        aria-hidden="true"
                                                                 />
                                                         </PopoverButton>
                                                         <Transition
@@ -320,7 +323,8 @@ const Navbar = () => {
                                                                                                 size={
                                                                                                         14
                                                                                                 }
-                                                                                                className="text-[#24A0ED]"
+                                                                                                className="text-[var(--accent)]"
+                                                                                                aria-hidden="true"
                                                                                         />
                                                                                         <div>
                                                                                                 <p className="text-xs font-medium text-black dark:text-white">
@@ -329,6 +333,50 @@ const Navbar = () => {
                                                                                                 <p className="text-[10px] text-black/40 dark:text-white/40">
                                                                                                         .md
                                                                                                         file
+                                                                                                </p>
+                                                                                        </div>
+                                                                                </button>
+                                                                                <button
+                                                                                        className="w-full flex items-center gap-2.5 px-2.5 py-2 text-left rounded-lg hover:bg-light-secondary dark:hover:bg-dark-secondary transition-colors duration-200"
+                                                                                        onClick={() => {
+                                                                                                window.open(`/api/chats/${chatId}/export?format=json`, '_blank');
+                                                                                        }}
+                                                                                >
+                                                                                        <FileJson
+                                                                                                size={
+                                                                                                        14
+                                                                                                }
+                                                                                                className="text-[var(--accent)]"
+                                                                                                aria-hidden="true"
+                                                                                        />
+                                                                                        <div>
+                                                                                                <p className="text-xs font-medium text-black dark:text-white">
+                                                                                                        JSON
+                                                                                                </p>
+                                                                                                <p className="text-[10px] text-black/40 dark:text-white/40">
+                                                                                                        Provenance data
+                                                                                                </p>
+                                                                                        </div>
+                                                                                </button>
+                                                                                <button
+                                                                                        className="w-full flex items-center gap-2.5 px-2.5 py-2 text-left rounded-lg hover:bg-light-secondary dark:hover:bg-dark-secondary transition-colors duration-200"
+                                                                                        onClick={() => {
+                                                                                                window.open(`/api/chats/${chatId}/export?format=csv`, '_blank');
+                                                                                        }}
+                                                                                >
+                                                                                        <Table
+                                                                                                size={
+                                                                                                        14
+                                                                                                }
+                                                                                                className="text-[var(--accent)]"
+                                                                                                aria-hidden="true"
+                                                                                        />
+                                                                                        <div>
+                                                                                                <p className="text-xs font-medium text-black dark:text-white">
+                                                                                                        CSV
+                                                                                                </p>
+                                                                                                <p className="text-[10px] text-black/40 dark:text-white/40">
+                                                                                                        Spreadsheet
                                                                                                 </p>
                                                                                         </div>
                                                                                 </button>
@@ -346,7 +394,8 @@ const Navbar = () => {
                                                                                                 size={
                                                                                                         14
                                                                                                 }
-                                                                                                className="text-[#24A0ED]"
+                                                                                                className="text-[var(--accent)]"
+                                                                                                aria-hidden="true"
                                                                                         />
                                                                                         <div>
                                                                                                 <p className="text-xs font-medium text-black dark:text-white">

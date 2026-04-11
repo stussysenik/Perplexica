@@ -37,8 +37,8 @@ const Sources = () => {
     <Popover className="relative">
       {({ open }) => (
         <>
-          <PopoverButton className="flex items-center justify-center active:border-none hover:bg-light-200 hover:dark:bg-dark-200 p-2 rounded-lg focus:outline-none text-black/50 dark:text-white/50 active:scale-95 transition duration-200 hover:text-black dark:hover:text-white">
-            <GlobeIcon className="h-[18px] w-auto" />
+          <PopoverButton className="min-h-[44px] min-w-[44px] flex items-center justify-center p-2 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 dark:focus-visible:ring-offset-dark-primary text-black/50 dark:text-white/50 active:scale-95 transition-colors duration-200 hover:text-black dark:hover:text-white hover:bg-light-secondary dark:hover:bg-dark-secondary" aria-label="Select search sources">
+            <GlobeIcon className="h-[18px] w-auto" aria-hidden="true" />
           </PopoverButton>
           <AnimatePresence>
             {open && (
@@ -54,9 +54,13 @@ const Sources = () => {
                   className="origin-top-right flex flex-col bg-light-primary dark:bg-dark-primary border rounded-lg border-light-200 dark:border-dark-200 w-full p-1 max-h-[200px] md:max-h-none overflow-y-auto shadow-lg"
                 >
                   {sourcesList.map((source, i) => (
-                    <div
+                    <button
                       key={i}
-                      className="flex flex-row justify-between hover:bg-light-100 hover:dark:bg-dark-100 rounded-md py-3 px-2 cursor-pointer"
+                      type="button"
+                      role="switch"
+                      aria-checked={sources.includes(source.key)}
+                      aria-label={`${source.name} search source`}
+                      className="flex flex-row justify-between items-center hover:bg-light-secondary dark:hover:bg-dark-secondary rounded-md py-3 px-2 cursor-pointer w-full focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
                       onClick={() => {
                         if (!sources.includes(source.key)) {
                           setSources([...sources, source.key]);
@@ -78,7 +82,7 @@ const Sources = () => {
                           className="pointer-events-none inline-block size-3 translate-x-[1px] group-data-[checked]:translate-x-3 rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out"
                         />
                       </Switch>
-                    </div>
+                    </button>
                   ))}
                 </motion.div>
               </PopoverPanel>

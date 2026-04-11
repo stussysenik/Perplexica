@@ -74,10 +74,11 @@ const AttachSmall = () => {
 
         if (loading) {
                 return (
-                        <div className="p-1">
+                        <div className="min-h-[44px] min-w-[44px] flex items-center justify-center p-1" aria-label="Uploading file" role="status">
                                 <LoaderCircle
                                         size={16}
-                                        className="text-[#24A0ED] animate-spin"
+                                        className="text-[var(--accent)] animate-spin"
+                                        aria-hidden="true"
                                 />
                         </div>
                 );
@@ -90,7 +91,8 @@ const AttachSmall = () => {
                                         <>
                                                 <PopoverButton
                                                         type="button"
-                                                        className="flex items-center gap-1 p-1 rounded-lg text-black/40 dark:text-white/40 hover:text-black/70 dark:hover:text-white/70 hover:bg-light-secondary dark:hover:bg-dark-secondary transition-all duration-200"
+                                                        aria-label={`${files.length} attached file${files.length !== 1 ? 's' : ''}`}
+                                                        className="flex items-center gap-1 min-h-[44px] min-w-[44px] p-1 rounded-lg text-black/40 dark:text-white/40 hover:text-black/70 dark:hover:text-white/70 hover:bg-light-secondary dark:hover:bg-dark-secondary transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
                                                 >
                                                         <div className="relative">
                                                                 <Paperclip
@@ -98,7 +100,7 @@ const AttachSmall = () => {
                                                                                 16
                                                                         }
                                                                 />
-                                                                <span className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 bg-[#24A0ED] text-white text-[8px] font-bold rounded-full flex items-center justify-center">
+                                                                <span className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 bg-[var(--accent)] text-white text-[8px] font-bold rounded-full flex items-center justify-center">
                                                                         {
                                                                                 files.length
                                                                         }
@@ -150,7 +152,7 @@ const AttachSmall = () => {
                                                                                                         onClick={() =>
                                                                                                                 fileInputRef.current.click()
                                                                                                         }
-                                                                                                        className="flex items-center gap-1 text-[#24A0ED] text-xs"
+                                                                                                        className="flex items-center gap-1 text-[var(--accent)] text-xs"
                                                                                                 >
                                                                                                         <Plus
                                                                                                                 size={
@@ -199,7 +201,7 @@ const AttachSmall = () => {
                                                                                                                                         size={
                                                                                                                                                 13
                                                                                                                                         }
-                                                                                                                                        className="text-[#24A0ED]"
+                                                                                                                                        className="text-[var(--accent)]"
                                                                                                                                 />
                                                                                                                         ) : (
                                                                                                                                 <File
@@ -283,7 +285,8 @@ const AttachSmall = () => {
                 <button
                         type="button"
                         onClick={() => fileInputRef.current.click()}
-                        className="flex items-center gap-0.5 p-1.5 rounded-lg text-black/30 dark:text-white/30 hover:text-black/60 dark:hover:text-white/60 hover:bg-light-secondary dark:hover:bg-dark-secondary transition-all duration-200"
+                        aria-label="Attach files"
+                        className="min-h-[44px] min-w-[44px] flex items-center justify-center gap-0.5 p-1.5 rounded-lg text-black/30 dark:text-white/30 hover:text-black/60 dark:hover:text-white/60 hover:bg-light-secondary dark:hover:bg-dark-secondary transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
                 >
                         <input
                                 type="file"
@@ -293,7 +296,7 @@ const AttachSmall = () => {
                                 multiple
                                 hidden
                         />
-                        <Paperclip size={15} />
+                        <Paperclip size={15} aria-hidden="true" />
                 </button>
         );
 };

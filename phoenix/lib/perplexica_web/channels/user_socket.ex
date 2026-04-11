@@ -1,7 +1,9 @@
 defmodule PerplexicaWeb.UserSocket do
   use Phoenix.Socket
 
-  use Absinthe.Phoenix.Socket, schema: PerplexicaWeb.Schema
+  use Absinthe.Phoenix.Socket,
+    schema: PerplexicaWeb.Schema,
+    pubsub: Perplexica.PubSub
 
   @impl true
   def connect(_params, socket, _connect_info) do
