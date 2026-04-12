@@ -4,16 +4,14 @@ FROM node:20-alpine AS builder
 # Set working directory
 WORKDIR /app
 
-# Install dependencies
-COPY package.json yarn.lock ./
-COPY web/package.json ./web/
-COPY api/package.json ./api/
-
-# Install dependencies for the whole workspace
-RUN yarn install --immutable
+# Enable corepack
+RUN corepack enable
 
 # Copy source code
 COPY . .
+
+# Install dependencies
+RUN yarn install --immutable
 
 # Set environment variables for build
 ARG PHOENIX_URL

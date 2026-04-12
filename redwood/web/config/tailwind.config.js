@@ -55,7 +55,7 @@ module.exports = {
 
       // --- Typography ---
       fontFamily: {
-        sans: ['Montserrat', '-apple-system', 'BlinkMacSystemFont', 'system-ui', 'sans-serif'],
+        sans: ['IBM Plex Sans', '-apple-system', 'BlinkMacSystemFont', 'system-ui', 'sans-serif'],
       },
       fontSize: {
         display: ['32px', { lineHeight: '40px', fontWeight: '600' }],
