@@ -65,7 +65,7 @@ const Chat = () => {
         }, [messages]);
 
         return (
-                <div className="flex flex-col space-y-8 pt-6 pb-56 lg:pb-40">
+                <div className="flex flex-col space-y-8 pt-4 pb-48 lg:pb-36">
                         <AnimatePresence initial={false}>
                                 {sections.map((section, i) => {
                                         const isLast =
@@ -108,7 +108,7 @@ const Chat = () => {
                                                                 isLast={isLast}
                                                         />
                                                         {!isLast && (
-                                                                <div className="h-px w-full bg-light-200 dark:bg-dark-200 mx-auto" />
+                                                                <div className="h-px w-full bg-[var(--border-primary)] mx-auto" />
                                                         )}
                                                 </motion.div>
                                         );
@@ -118,7 +118,7 @@ const Chat = () => {
                         <div ref={messageEnd} className="h-0" />
                         {dividerWidth > 0 && (
                                 <div
-                                        className="fixed z-40 bottom-24 lg:bottom-8 left-1/2 -translate-x-1/2 px-5 lg:px-0"
+                                        className="fixed z-40 bottom-20 lg:bottom-6 left-1/2 -translate-x-1/2 px-4 lg:px-0"
                                         style={{
                                                 width: Math.min(
                                                         dividerWidth,
@@ -126,18 +126,16 @@ const Chat = () => {
                                                 ),
                                         }}
                                 >
-                                        {/* Light mode gradient */}
                                         <div
-                                                className="pointer-events-none absolute -bottom-6 left-0 right-0 h-[calc(100%+24px+24px)] dark:hidden"
+                                                className="pointer-events-none absolute -bottom-4 left-0 right-0 h-[calc(100%+16px+16px)] dark:hidden"
                                                 style={{
-                                                        background: "linear-gradient(to top, var(--bg-primary) 0%, var(--bg-primary) 35%, color-mix(in srgb, var(--bg-primary) 95%, transparent) 45%, color-mix(in srgb, var(--bg-primary) 85%, transparent) 55%, color-mix(in srgb, var(--bg-primary) 70%, transparent) 65%, color-mix(in srgb, var(--bg-primary) 50%, transparent) 75%, color-mix(in srgb, var(--bg-primary) 30%, transparent) 85%, color-mix(in srgb, var(--bg-primary) 10%, transparent) 92%, transparent 100%)",
+                                                        background: "linear-gradient(to top, var(--bg-primary) 0%, var(--bg-primary) 30%, color-mix(in srgb, var(--bg-primary) 90%, transparent) 45%, color-mix(in srgb, var(--bg-primary) 70%, transparent) 60%, color-mix(in srgb, var(--bg-primary) 40%, transparent) 75%, color-mix(in srgb, var(--bg-primary) 15%, transparent) 88%, transparent 100%)",
                                                 }}
                                         />
-                                        {/* Dark mode gradient */}
                                         <div
-                                                className="pointer-events-none absolute -bottom-6 left-0 right-0 h-[calc(100%+24px+24px)] hidden dark:block"
+                                                className="pointer-events-none absolute -bottom-4 left-0 right-0 h-[calc(100%+16px+16px)] hidden dark:block"
                                                 style={{
-                                                        background: "linear-gradient(to top, var(--bg-primary) 0%, var(--bg-primary) 35%, color-mix(in srgb, var(--bg-primary) 95%, transparent) 45%, color-mix(in srgb, var(--bg-primary) 85%, transparent) 55%, color-mix(in srgb, var(--bg-primary) 70%, transparent) 65%, color-mix(in srgb, var(--bg-primary) 50%, transparent) 75%, color-mix(in srgb, var(--bg-primary) 30%, transparent) 85%, color-mix(in srgb, var(--bg-primary) 10%, transparent) 92%, transparent 100%)",
+                                                        background: "linear-gradient(to top, var(--bg-primary) 0%, var(--bg-primary) 30%, color-mix(in srgb, var(--bg-primary) 90%, transparent) 45%, color-mix(in srgb, var(--bg-primary) 70%, transparent) 60%, color-mix(in srgb, var(--bg-primary) 40%, transparent) 75%, color-mix(in srgb, var(--bg-primary) 15%, transparent) 88%, transparent 100%)",
                                                 }}
                                         />
                                         <MessageInput />

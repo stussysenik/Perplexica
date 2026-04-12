@@ -10,28 +10,19 @@ const modeConfig = [
                 key: "speed",
                 label: "Speed",
                 icon: Zap,
-                color: "text-amber-500",
-                activeBg: "bg-amber-500/10",
-                activeBorder: "border-amber-500/20",
-                activeText: "text-amber-600 dark:text-amber-400",
+                activeClass: "text-amber-600 dark:text-amber-400 border-amber-500/30 bg-amber-50 dark:bg-amber-500/10",
         },
         {
                 key: "balanced",
                 label: "Balanced",
                 icon: Sliders,
-                color: "text-emerald-500",
-                activeBg: "bg-emerald-500/10",
-                activeBorder: "border-emerald-500/20",
-                activeText: "text-emerald-600 dark:text-emerald-400",
+                activeClass: "text-emerald-600 dark:text-emerald-400 border-emerald-500/30 bg-emerald-50 dark:bg-emerald-500/10",
         },
         {
                 key: "quality",
                 label: "Quality",
                 icon: Star,
-                color: "text-sky-500",
-                activeBg: "bg-sky-500/10",
-                activeBorder: "border-sky-500/20",
-                activeText: "text-sky-600 dark:text-sky-400",
+                activeClass: "text-blue-600 dark:text-blue-400 border-blue-500/30 bg-blue-50 dark:bg-blue-500/10",
         },
 ];
 
@@ -71,7 +62,7 @@ const EmptyChatMessageInput = () => {
                         className="w-full max-w-2xl flex flex-col items-center"
                 >
                         <div
-                                className="flex items-center gap-1 mb-4 w-full px-1"
+                                className="flex items-center gap-1 mb-3 w-full px-0.5"
                                 role="radiogroup"
                                 aria-label="Search mode"
                         >
@@ -90,20 +81,20 @@ const EmptyChatMessageInput = () => {
                                                                 )
                                                         }
                                                         className={cn(
-                                                                "flex items-center gap-1.5 text-xs font-medium px-3.5 py-2 rounded-full transition-colors duration-200 border focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] min-h-[36px]",
+                                                                "flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1.5 rounded-md transition-colors duration-150 border min-h-[32px] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-1",
                                                                 isActive
-                                                                        ? cn(mode.activeBg, mode.activeBorder, mode.activeText)
-                                                                        : "text-black/40 dark:text-white/40 hover:text-black/70 dark:hover:text-white/70 border-transparent hover:border-light-200 dark:hover:border-dark-200",
+                                                                        ? mode.activeClass
+                                                                        : "text-[var(--text-muted)] border-[var(--border-primary)] hover:text-[var(--text-secondary)] hover:border-[var(--border-secondary)]",
                                                         )}
                                                 >
-                                                        <Icon size={13} className={isActive ? mode.color : ""} aria-hidden="true" />
+                                                        <Icon size={12} aria-hidden="true" />
                                                         <span>{mode.label}</span>
                                                 </button>
                                         );
                                 })}
                         </div>
 
-                        <div className="flex flex-col bg-white dark:bg-dark-secondary/80 px-4 py-3 rounded-2xl w-full border border-light-200 dark:border-dark-200 shadow-sm transition-all duration-300 focus-within:shadow-md focus-within:border-[var(--accent)]/30 focus-within:ring-4 focus-within:ring-[var(--accent)]/5 relative">
+                        <div className="flex flex-col bg-[var(--bg-primary)] px-3 py-2.5 rounded-lg w-full border border-[var(--border-primary)] transition-colors duration-150 focus-within:border-[var(--accent)] focus-within:ring-2 focus-within:ring-[var(--accent)]/10 relative">
                                 <Attach />
                                 <div className="flex items-center w-full">
                                         <TextareaAutosize
@@ -116,7 +107,7 @@ const EmptyChatMessageInput = () => {
                                                 }
                                                 minRows={1}
                                                 maxRows={4}
-                                                className="bg-transparent placeholder:text-[15px] placeholder:text-black/40 dark:placeholder:text-white/40 text-sm text-black dark:text-white resize-none focus:outline-none w-full max-h-32 py-1.5"
+                                                className="bg-transparent placeholder:text-[13px] placeholder:text-[var(--text-muted)] text-[13px] text-[var(--text-primary)] resize-none focus:outline-none w-full max-h-32 py-1"
                                                 placeholder="Ask anything..."
                                                 aria-label="Search query"
                                         />
@@ -127,10 +118,10 @@ const EmptyChatMessageInput = () => {
                                                 }
                                                 type="submit"
                                                 aria-label="Send message"
-                                                className="flex-shrink-0 flex items-center justify-center h-9 w-9 ml-2 rounded-lg bg-[var(--accent)] text-white hover:opacity-90 transition-colors duration-200 disabled:opacity-30 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 dark:focus-visible:ring-offset-dark-primary"
+                                                className="flex-shrink-0 flex items-center justify-center h-7 w-7 ml-2 rounded-md bg-[var(--accent)] text-white hover:opacity-90 transition-opacity duration-150 disabled:opacity-25 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-1"
                                         >
                                                 <ArrowUp
-                                                        size={16}
+                                                        size={14}
                                                         strokeWidth={2.5}
                                                         aria-hidden="true"
                                                 />
@@ -138,12 +129,12 @@ const EmptyChatMessageInput = () => {
                                 </div>
                         </div>
 
-                        <p className="text-[10px] text-black/30 dark:text-white/30 mt-3.5 tracking-[0.05em] font-medium">
-                                <kbd className="px-1.5 py-0.5 border border-black/10 dark:border-white/10 rounded text-[9px]">
+                        <p className="text-[10px] text-[var(--text-muted)] mt-2.5 tracking-tight font-medium">
+                                <kbd className="px-1 py-0.5 border border-[var(--border-primary)] rounded text-[9px]">
                                         /
                                 </kbd>{" "}
                                 to focus ·{" "}
-                                <kbd className="px-1.5 py-0.5 border border-black/10 dark:border-white/10 rounded text-[9px]">
+                                <kbd className="px-1 py-0.5 border border-[var(--border-primary)] rounded text-[9px]">
                                         ⇧ ↵
                                 </kbd>{" "}
                                 new line

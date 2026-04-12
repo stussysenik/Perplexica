@@ -32,53 +32,53 @@ const SourceCard = ({
 
   return (
     <div
-      className="bg-light-100 hover:bg-light-200 dark:bg-dark-100 dark:hover:bg-dark-200 transition duration-200 rounded-lg flex flex-col font-medium"
+      className="bg-[var(--bg-primary)] border border-[var(--border-primary)] hover:border-[var(--border-secondary)] transition-colors duration-150 rounded-md flex flex-col font-medium"
       data-testid={`source-card-${index}`}
     >
       <a
-        className="p-3 flex flex-col space-y-2"
+        className="p-2.5 flex flex-col space-y-1.5"
         href={source.metadata.url}
         target="_blank"
       >
-        <p className="dark:text-white text-xs overflow-hidden whitespace-nowrap text-ellipsis">
+        <p className="text-[var(--text-primary)] text-[12px] overflow-hidden whitespace-nowrap text-ellipsis leading-tight">
           {source.metadata.title}
         </p>
         <div className="flex flex-row items-center justify-between">
           <div className="flex flex-row items-center space-x-1">
             {source.metadata.url.includes('file_id://') ? (
-              <div className="bg-dark-200 hover:bg-dark-100 transition duration-200 flex items-center justify-center w-6 h-6 rounded-full">
-                <File size={12} className="text-white/70" />
+              <div className="bg-[var(--bg-tertiary)] flex items-center justify-center w-5 h-5 rounded">
+                <File size={10} className="text-[var(--text-muted)]" />
               </div>
             ) : (
               <img
                 src={`https://s2.googleusercontent.com/s2/favicons?domain_url=${source.metadata.url}`}
-                width={16}
-                height={16}
+                width={14}
+                height={14}
                 alt="favicon"
-                className="rounded-lg h-4 w-4"
+                className="rounded h-3.5 w-3.5"
               />
             )}
-            <p className="text-xs text-black/50 dark:text-white/50 overflow-hidden whitespace-nowrap text-ellipsis">
+            <p className="text-[11px] text-[var(--text-muted)] overflow-hidden whitespace-nowrap text-ellipsis">
               {source.metadata.url.includes('file_id://')
                 ? 'Uploaded File'
                 : source.metadata.url.replace(/.+\/\/|www.|\..+/g, '')}
             </p>
           </div>
-          <div className="flex flex-row items-center space-x-1 text-black/50 dark:text-white/50 text-xs">
-            <div className="bg-black/50 dark:bg-white/50 h-[4px] w-[4px] rounded-full" />
-            <span>{index + 1}</span>
+          <div className="flex flex-row items-center space-x-1 text-[var(--text-muted)] text-[11px]">
+            <div className="bg-[var(--text-muted)] h-[3px] w-[3px] rounded-full" />
+            <span className="tabular-nums">{index + 1}</span>
           </div>
         </div>
       </a>
       {showContent && hasContent && (
-        <div className="px-3 pb-2">
+        <div className="px-2.5 pb-2">
           <button
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
               setExpanded(!expanded);
             }}
-            className="flex items-center gap-1 text-[10px] text-blue-400 hover:text-blue-300 transition-colors"
+            className="flex items-center gap-1 text-[10px] text-[var(--accent)] hover:opacity-80 transition-opacity"
             data-testid={`source-toggle-${index}`}
           >
             {expanded ? (
@@ -90,10 +90,10 @@ const SourceCard = ({
           </button>
           {expanded && (
             <div
-             className="mt-2 p-2 rounded bg-light-200/50 dark:bg-dark-200/50"
+             className="mt-1.5 p-2 rounded bg-[var(--bg-secondary)]"
              data-testid={`source-content-${index}`}
             >
-              <p className="text-[11px] leading-relaxed text-black/70 dark:text-white/70 whitespace-pre-wrap break-words">
+              <p className="text-[11px] leading-relaxed text-[var(--text-secondary)] whitespace-pre-wrap break-words">
                 {truncatedContent}
               </p>
             </div>
@@ -118,14 +118,14 @@ const MessageSources = ({ sources }: { sources: Chunk[] }) => {
   };
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-1.5">
       {sources.slice(0, 3).map((source, i) => (
         <SourceCard key={i} source={source} index={i} showContent={true} />
       ))}
       {sources.length > 3 && (
         <button
           onClick={openModal}
-          className="bg-light-100 hover:bg-light-200 dark:bg-dark-100 dark:hover:bg-dark-200 transition duration-200 rounded-lg p-3 flex flex-col space-y-2 font-medium"
+          className="bg-[var(--bg-primary)] border border-[var(--border-primary)] hover:border-[var(--border-secondary)] transition-colors duration-150 rounded-md p-2.5 flex flex-col space-y-1.5 font-medium"
           data-testid="source-view-more"
         >
           <div className="flex flex-row items-center space-x-1">
@@ -149,7 +149,7 @@ const MessageSources = ({ sources }: { sources: Chunk[] }) => {
               );
             })}
           </div>
-          <p className="text-xs text-black/50 dark:text-white/50">
+          <p className="text-[11px] text-[var(--text-muted)]">
             View {sources.length - 3} more
           </p>
         </button>
@@ -167,11 +167,11 @@ const MessageSources = ({ sources }: { sources: Chunk[] }) => {
                 leaveFrom="opacity-100 scale-200"
                 leaveTo="opacity-0 scale-95"
               >
-                <DialogPanel className="w-full max-w-2xl transform rounded-2xl bg-light-secondary dark:bg-dark-secondary border border-light-200 dark:border-dark-200 p-6 text-left align-middle shadow-xl transition-all">
-                  <DialogTitle className="text-lg font-medium leading-6 dark:text-white">
+                <DialogPanel className="w-full max-w-2xl transform rounded-lg bg-[var(--bg-primary)] border border-[var(--border-primary)] p-5 text-left align-middle transition-all">
+                  <DialogTitle className="text-sm font-medium leading-6 text-[var(--text-primary)]">
                     Sources
                   </DialogTitle>
-                  <div className="grid grid-cols-1 gap-2 overflow-auto max-h-[500px] mt-2 pr-2">
+                  <div className="grid grid-cols-1 gap-1.5 overflow-auto max-h-[500px] mt-3 pr-1">
                     {sources.map((source, i) => (
                       <SourceCard
                         key={i}

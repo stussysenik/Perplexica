@@ -254,31 +254,31 @@ const Navbar = () => {
         }, []);
 
         return (
-                <div className="sticky top-0 z-40 bg-light-primary/90 dark:bg-dark-primary/90 backdrop-blur-md border-b border-light-200/50 dark:border-dark-200/50">
-                        <div className="px-3 lg:px-5 py-3">
+                <div className="sticky top-0 z-40 bg-[var(--bg-primary)] border-b border-[var(--border-primary)]">
+                        <div className="px-3 lg:px-4 py-2.5">
                                 <div className="flex items-center justify-between gap-3">
                                         <div className="flex items-center gap-2 min-w-0 flex-shrink-0">
                                                 <a
                                                         href="/"
-                                                        className="lg:hidden p-2 -ml-1 rounded-lg hover:bg-light-secondary dark:hover:bg-dark-secondary transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+                                                        className="lg:hidden p-1.5 -ml-1 rounded-md hover:bg-[var(--bg-secondary)] transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
                                                         aria-label="New chat"
                                                 >
                                                         <Edit
-                                                                size={16}
-                                                                className="text-black/50 dark:text-white/50"
+                                                                size={14}
+                                                                className="text-[var(--text-muted)]"
                                                                 aria-hidden="true"
                                                         />
                                                 </a>
-                                                <div className="hidden lg:flex items-center gap-1.5 text-black/40 dark:text-white/40">
-                                                        <Clock size={12} aria-hidden="true" />
-                                                        <span className="text-[11px]">
+                                                <div className="hidden lg:flex items-center gap-1.5 text-[var(--text-muted)]">
+                                                        <Clock size={11} aria-hidden="true" />
+                                                        <span className="text-[10px] tabular-nums">
                                                                 {timeAgo} ago
                                                         </span>
                                                 </div>
                                         </div>
 
                                         <div className="flex-1 min-w-0">
-                                                <h1 className="text-center text-sm font-medium text-black/70 dark:text-white/80 truncate">
+                                                <h1 className="text-center text-[13px] font-medium text-[var(--text-secondary)] truncate">
                                                         {title ||
                                                                 "New Conversation"}
                                                 </h1>
@@ -286,12 +286,12 @@ const Navbar = () => {
 
                                         <div className="flex items-center gap-0.5 flex-shrink-0">
                                                 <Popover className="relative">
-                                                        <PopoverButton className="p-2 rounded-lg hover:bg-light-secondary dark:hover:bg-dark-secondary transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]" aria-label="Export conversation">
+                                                        <PopoverButton className="p-1.5 rounded-md hover:bg-[var(--bg-secondary)] transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]" aria-label="Export conversation">
                                                                 <Share
                                                                         size={
-                                                                                15
+                                                                                14
                                                                         }
-                                                                        className="text-black/40 dark:text-white/40"
+                                                                        className="text-[var(--text-muted)]"
                                                                         aria-hidden="true"
                                                                 />
                                                         </PopoverButton>
@@ -304,13 +304,13 @@ const Navbar = () => {
                                                                 leaveFrom="opacity-100 translate-y-0"
                                                                 leaveTo="opacity-0 translate-y-1"
                                                         >
-                                                                <PopoverPanel className="absolute right-0 mt-2 w-56 origin-top-right rounded-xl bg-light-primary dark:bg-dark-primary border border-light-200 dark:border-dark-200 shadow-lg z-50 overflow-hidden">
-                                                                        <div className="p-2">
-                                                                                <p className="text-[10px] font-semibold text-black/30 dark:text-white/30 uppercase tracking-wider px-2 pt-1 pb-2">
+                                                                <PopoverPanel className="absolute right-0 mt-1.5 w-52 origin-top-right rounded-lg bg-[var(--bg-primary)] border border-[var(--border-primary)] shadow-sm z-50 overflow-hidden">
+                                                                        <div className="p-1.5">
+                                                                                <p className="text-[9px] font-semibold text-[var(--text-muted)] uppercase tracking-wider px-2 pt-0.5 pb-1.5">
                                                                                         Export
                                                                                 </p>
                                                                                 <button
-                                                                                        className="w-full flex items-center gap-2.5 px-2.5 py-2 text-left rounded-lg hover:bg-light-secondary dark:hover:bg-dark-secondary transition-colors duration-200"
+                                                                                        className="w-full flex items-center gap-2 px-2 py-1.5 text-left rounded-md hover:bg-[var(--bg-secondary)] transition-colors duration-150"
                                                                                         onClick={() =>
                                                                                                 exportAsMarkdown(
                                                                                                         sections,
@@ -321,67 +321,67 @@ const Navbar = () => {
                                                                                 >
                                                                                         <FileText
                                                                                                 size={
-                                                                                                        14
+                                                                                                        13
                                                                                                 }
                                                                                                 className="text-[var(--accent)]"
                                                                                                 aria-hidden="true"
                                                                                         />
                                                                                         <div>
-                                                                                                <p className="text-xs font-medium text-black dark:text-white">
+                                                                                                <p className="text-[12px] font-medium text-[var(--text-primary)]">
                                                                                                         Markdown
                                                                                                 </p>
-                                                                                                <p className="text-[10px] text-black/40 dark:text-white/40">
+                                                                                                <p className="text-[10px] text-[var(--text-muted)]">
                                                                                                         .md
                                                                                                         file
                                                                                                 </p>
                                                                                         </div>
                                                                                 </button>
                                                                                 <button
-                                                                                        className="w-full flex items-center gap-2.5 px-2.5 py-2 text-left rounded-lg hover:bg-light-secondary dark:hover:bg-dark-secondary transition-colors duration-200"
+                                                                                        className="w-full flex items-center gap-2 px-2 py-1.5 text-left rounded-md hover:bg-[var(--bg-secondary)] transition-colors duration-150"
                                                                                         onClick={() => {
                                                                                                 window.open(`/api/chats/${chatId}/export?format=json`, '_blank');
                                                                                         }}
                                                                                 >
                                                                                         <FileJson
                                                                                                 size={
-                                                                                                        14
+                                                                                                        13
                                                                                                 }
                                                                                                 className="text-[var(--accent)]"
                                                                                                 aria-hidden="true"
                                                                                         />
                                                                                         <div>
-                                                                                                <p className="text-xs font-medium text-black dark:text-white">
+                                                                                                <p className="text-[12px] font-medium text-[var(--text-primary)]">
                                                                                                         JSON
                                                                                                 </p>
-                                                                                                <p className="text-[10px] text-black/40 dark:text-white/40">
+                                                                                                <p className="text-[10px] text-[var(--text-muted)]">
                                                                                                         Provenance data
                                                                                                 </p>
                                                                                         </div>
                                                                                 </button>
                                                                                 <button
-                                                                                        className="w-full flex items-center gap-2.5 px-2.5 py-2 text-left rounded-lg hover:bg-light-secondary dark:hover:bg-dark-secondary transition-colors duration-200"
+                                                                                        className="w-full flex items-center gap-2 px-2 py-1.5 text-left rounded-md hover:bg-[var(--bg-secondary)] transition-colors duration-150"
                                                                                         onClick={() => {
                                                                                                 window.open(`/api/chats/${chatId}/export?format=csv`, '_blank');
                                                                                         }}
                                                                                 >
                                                                                         <Table
                                                                                                 size={
-                                                                                                        14
+                                                                                                        13
                                                                                                 }
                                                                                                 className="text-[var(--accent)]"
                                                                                                 aria-hidden="true"
                                                                                         />
                                                                                         <div>
-                                                                                                <p className="text-xs font-medium text-black dark:text-white">
+                                                                                                <p className="text-[12px] font-medium text-[var(--text-primary)]">
                                                                                                         CSV
                                                                                                 </p>
-                                                                                                <p className="text-[10px] text-black/40 dark:text-white/40">
+                                                                                                <p className="text-[10px] text-[var(--text-muted)]">
                                                                                                         Spreadsheet
                                                                                                 </p>
                                                                                         </div>
                                                                                 </button>
                                                                                 <button
-                                                                                        className="w-full flex items-center gap-2.5 px-2.5 py-2 text-left rounded-lg hover:bg-light-secondary dark:hover:bg-dark-secondary transition-colors duration-200"
+                                                                                        className="w-full flex items-center gap-2 px-2 py-1.5 text-left rounded-md hover:bg-[var(--bg-secondary)] transition-colors duration-150"
                                                                                         onClick={() =>
                                                                                                 exportAsPDF(
                                                                                                         sections,
@@ -392,16 +392,16 @@ const Navbar = () => {
                                                                                 >
                                                                                         <FileDown
                                                                                                 size={
-                                                                                                        14
+                                                                                                        13
                                                                                                 }
                                                                                                 className="text-[var(--accent)]"
                                                                                                 aria-hidden="true"
                                                                                         />
                                                                                         <div>
-                                                                                                <p className="text-xs font-medium text-black dark:text-white">
+                                                                                                <p className="text-[12px] font-medium text-[var(--text-primary)]">
                                                                                                         PDF
                                                                                                 </p>
-                                                                                                <p className="text-[10px] text-black/40 dark:text-white/40">
+                                                                                                <p className="text-[10px] text-[var(--text-muted)]">
                                                                                                         Document
                                                                                                 </p>
                                                                                         </div>

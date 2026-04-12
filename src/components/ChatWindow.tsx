@@ -61,7 +61,7 @@ const ChatWindow = () => {
                                                 <SettingsButtonMobile />
                                         </div>
                                         <div className="flex flex-col items-center justify-center min-h-screen">
-                                                <p className="dark:text-white/70 text-black/70 text-sm">
+                                                <p className="text-[var(--text-secondary)] text-sm">
                                                         Failed to connect to the
                                                         server. Please try again
                                                         later.
@@ -92,7 +92,7 @@ const ChatWindow = () => {
                         ) : (
                                 <div className="flex flex-col items-center justify-center min-h-screen w-full gap-3" role="status" aria-label="Initializing chat">
                                         <Loader />
-                                        <p className="text-xs text-black/40 dark:text-white/40 tabular-nums">
+                                        <p className="text-[10px] text-[var(--text-muted)] tabular-nums">
                                                 Initializing… {(elapsedMs / 1000).toFixed(1)}s
                                         </p>
                                 </div>

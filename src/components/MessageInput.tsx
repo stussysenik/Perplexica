@@ -112,10 +112,10 @@ const MessageInput = () => {
                                         }
                                 }}
                                 className={cn(
-                                        "relative bg-light-primary dark:bg-dark-primary p-3 sm:p-4 flex items-center overflow-visible border border-light-200 dark:border-dark-200 shadow-sm transition-all duration-300 focus-within:shadow-md focus-within:border-[var(--accent)]/30 focus-within:ring-4 focus-within:ring-[var(--accent)]/5",
+                                        "relative bg-[var(--bg-primary)] p-2.5 sm:p-3 flex items-center overflow-visible border border-[var(--border-primary)] transition-colors duration-150 focus-within:border-[var(--accent)] focus-within:ring-2 focus-within:ring-[var(--accent)]/10",
                                         mode === "multi"
-                                                ? "flex-col rounded-2xl"
-                                                : "flex-row rounded-full",
+                                                ? "flex-col rounded-lg"
+                                                : "flex-row rounded-lg",
                                 )}
                         >
                                 {mode === "single" && (
@@ -138,7 +138,7 @@ const MessageInput = () => {
                                                         ),
                                                 );
                                         }}
-                                        className="bg-transparent dark:placeholder:text-white/40 placeholder:text-black/40 placeholder:text-sm text-sm dark:text-white text-black resize-none focus:outline-none w-full px-2 max-h-24 lg:max-h-36 flex-grow flex-shrink"
+                                        className="bg-transparent placeholder:text-[var(--text-muted)] placeholder:text-[13px] text-[13px] text-[var(--text-primary)] resize-none focus:outline-none w-full px-1.5 max-h-24 lg:max-h-36 flex-grow flex-shrink"
                                         placeholder="Ask a follow-up..."
                                         aria-label="Message input"
                                 />
@@ -149,14 +149,14 @@ const MessageInput = () => {
                                                                 .length === 0 ||
                                                         loading
                                                 }
-                                                className="bg-[var(--accent)] text-white disabled:opacity-30 hover:opacity-90 active:scale-95 transition-colors duration-200 rounded-full p-2 mr-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2"
-                                                aria-label="Send message"
-                                        >
-                                                <ArrowUp size={16} />
-                                        </button>
+                                        className="bg-[var(--accent)] text-white disabled:opacity-25 hover:opacity-90 active:scale-95 transition-opacity duration-150 rounded-md p-1.5 mr-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-1"
+                                        aria-label="Send message"
+                                >
+                                        <ArrowUp size={14} />
+                                </button>
                                 )}
                                 {mode === "multi" && (
-                                        <div className="flex flex-row items-center justify-between w-full pt-2">
+                                        <div className="flex flex-row items-center justify-between w-full pt-1.5">
                                                 <div className="flex items-center gap-0.5">
                                                         <AttachSmall />
                                                         <Optimization />
@@ -168,7 +168,7 @@ const MessageInput = () => {
                                                                         0 ||
                                                                 loading
                                                         }
-                                                        className="bg-[var(--accent)] text-white disabled:opacity-30 hover:opacity-90 active:scale-95 transition-colors duration-200 rounded-full p-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2"
+                                                        className="bg-[var(--accent)] text-white disabled:opacity-25 hover:opacity-90 active:scale-95 transition-opacity duration-150 rounded-md p-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-1"
                                                         aria-label="Send message"
                                                 >
                                                         <ArrowUp size={16} />

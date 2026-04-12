@@ -173,13 +173,13 @@ const MessageBox = ({
                                                                 }
                                                         }}
                                                         aria-label="Edit your prompt"
-                                                        className="w-full text-2xl sm:text-3xl font-medium bg-transparent border border-light-200 dark:border-dark-200 rounded-lg p-2 text-black dark:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] lg:w-9/12 resize-none"
+                                                        className="w-full text-xl sm:text-2xl font-medium bg-transparent border border-[var(--border-primary)] rounded-md p-2 text-[var(--text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] lg:w-9/12 resize-none"
                                                         autoFocus
                                                 />
                                                 <div className="flex gap-2">
                                                         <button
                                                                 onClick={handleEditResend}
-                                                                className="px-3 py-1.5 text-sm bg-[var(--accent)] text-white rounded-lg hover:opacity-90 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2"
+                                                                className="px-2.5 py-1 text-[12px] bg-[var(--accent)] text-white rounded-md hover:opacity-90 transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-1"
                                                         >
                                                                 Resend
                                                         </button>
@@ -188,7 +188,7 @@ const MessageBox = ({
                                                                         setEditedQuery(section.message.query);
                                                                         setEditingQuery(false);
                                                                 }}
-                                                                className="px-3 py-1.5 text-sm text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white rounded-lg hover:bg-light-secondary dark:hover:bg-dark-secondary transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+                                                                className="px-2.5 py-1 text-[12px] text-[var(--text-muted)] hover:text-[var(--text-primary)] rounded-md hover:bg-[var(--bg-secondary)] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
                                                         >
                                                                 Cancel
                                                         </button>
@@ -196,24 +196,24 @@ const MessageBox = ({
                                         </div>
                                 ) : (
                                         <>
-                                                <div className="flex flex-row items-start gap-2 lg:w-9/12">
-                                                        <h2 className="text-black dark:text-white font-medium text-2xl sm:text-3xl flex-1">
+                                                        <div className="flex flex-row items-start gap-2 lg:w-9/12">
+                                                        <h2 className="text-[var(--text-primary)] font-medium text-xl sm:text-2xl flex-1">
                                                                 {section.message.query}
                                                         </h2>
-                                                        <div className="flex gap-0.5 pt-1 shrink-0">
+                                                        <div className="flex gap-0.5 pt-0.5 shrink-0">
                                                                 <button
                                                                         onClick={handleCopyPrompt}
                                                                         aria-label={copyPromptFeedback ? "Copied prompt" : "Copy prompt"}
-                                                                        className="p-1.5 text-black/40 dark:text-white/40 rounded-lg hover:bg-light-secondary dark:hover:bg-dark-secondary hover:text-black/70 dark:hover:text-white/70 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+                                                                        className="p-1 text-[var(--text-muted)] rounded-md hover:bg-[var(--bg-secondary)] hover:text-[var(--text-secondary)] transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
                                                                 >
-                                                                        <CopyPromptIcon size={14} aria-hidden="true" />
+                                                                        <CopyPromptIcon size={13} aria-hidden="true" />
                                                                 </button>
                                                                 <button
                                                                         onClick={() => setEditingQuery(true)}
                                                                         aria-label="Edit and resend prompt"
-                                                                        className="p-1.5 text-black/40 dark:text-white/40 rounded-lg hover:bg-light-secondary dark:hover:bg-dark-secondary hover:text-black/70 dark:hover:text-white/70 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+                                                                        className="p-1 text-[var(--text-muted)] rounded-md hover:bg-[var(--bg-secondary)] hover:text-[var(--text-secondary)] transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
                                                                 >
-                                                                        <Pencil size={14} aria-hidden="true" />
+                                                                        <Pencil size={13} aria-hidden="true" />
                                                                 </button>
                                                         </div>
                                                 </div>
@@ -237,13 +237,11 @@ const MessageBox = ({
                                                 <div className="flex flex-col space-y-2">
                                                         <div className="flex flex-row items-center space-x-2">
                                                                 <BookCopy
-                                                                        className="text-black/70 dark:text-white/70"
-                                                                        size={
-                                                                                18
-                                                                        }
+                                                                        className="text-[var(--text-secondary)]"
+                                                                        size={16}
                                                                         aria-hidden="true"
                                                                 />
-                                                                <h3 className="text-black/70 dark:text-white/70 font-medium text-lg">
+                                                                <h3 className="text-[var(--text-secondary)] font-medium text-sm">
                                                                         Sources
                                                                 </h3>
                                                         </div>
@@ -301,9 +299,9 @@ const MessageBox = ({
                                                                         .length >
                                                                         0,
                                                 ) && (
-                                                        <div className="flex items-center gap-2 p-3 rounded-lg bg-light-secondary dark:bg-dark-secondary border border-light-200 dark:border-dark-200">
-                                                                <Disc3 className="w-4 h-4 text-black/50 dark:text-white/50 animate-spin" />
-                                                                <span className="text-sm text-black/50 dark:text-white/50">
+                                                        <div className="flex items-center gap-2 p-2.5 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-primary)]">
+                                                                <Disc3 className="w-3.5 h-3.5 text-[var(--text-muted)] animate-spin" />
+                                                                <span className="text-[13px] text-[var(--text-muted)]">
                                                                         Brainstorming...
                                                                 </span>
                                                         </div>
@@ -322,18 +320,16 @@ const MessageBox = ({
                                                         <div className="flex flex-row items-center space-x-2">
                                                                 <Disc3
                                                                         className={cn(
-                                                                                "text-black/70 dark:text-white/70",
+                                                                                "text-[var(--text-secondary)]",
                                                                                 isLast &&
                                                                                         loading
                                                                                         ? "animate-spin"
                                                                                         : "animate-none",
                                                                         )}
-                                                                        size={
-                                                                                18
-                                                                        }
+                                                                        size={16}
                                                                         aria-hidden="true"
                                                                 />
-                                                                <h3 className="text-black/70 dark:text-white/70 font-medium text-lg">
+                                                                <h3 className="text-[var(--text-secondary)] font-medium text-sm">
                                                                         Answer
                                                                 </h3>
                                                         </div>
@@ -345,7 +341,7 @@ const MessageBox = ({
                                                                         <Markdown
                                                                                 className={cn(
                                                                                         "prose prose-h1:mb-3 prose-h2:mb-2 prose-h2:mt-6 prose-h2:font-[800] prose-h3:mt-4 prose-h3:mb-1.5 prose-h3:font-[600] dark:prose-invert prose-p:leading-relaxed prose-pre:p-0 prose-pre:overflow-x-auto font-[400]",
-                                                                                        "max-w-none break-words text-black/90 dark:text-white/90",
+                                                                                        "max-w-none break-words text-[var(--text-primary)]",
                                                                                         "prose-a:text-[var(--accent)] prose-a:no-underline hover:prose-a:underline",
                                                                                         "prose-code:before:content-none prose-code:after:content-none",
                                                                                 )}
@@ -361,8 +357,8 @@ const MessageBox = ({
 
                                                                 {loading &&
                                                                 isLast ? null : (
-                                                                        <div className="flex flex-row items-center justify-between w-full text-black dark:text-white py-4 mt-2">
-                                                                                <div className="flex flex-row items-center -ml-1.5">
+                                                                        <div className="flex flex-row items-center justify-between w-full text-[var(--text-primary)] py-3 mt-1">
+                                                                                <div className="flex flex-row items-center -ml-1">
                                                                                         <Rewrite
                                                                                                 rewrite={
                                                                                                         rewrite
@@ -374,7 +370,7 @@ const MessageBox = ({
                                                                                                 }
                                                                                         />
                                                                                 </div>
-                                                                                <div className="flex flex-row items-center -mr-1.5">
+                                                                                <div className="flex flex-row items-center -mr-1">
                                                                                         <Copy
                                                                                                 initialMessage={
                                                                                                         parsedMessage
@@ -400,7 +396,7 @@ const MessageBox = ({
                                                                                                         }
                                                                                                 }}
                                                                                                 aria-label={speechStatus === "started" ? "Stop reading aloud" : "Read aloud"}
-                                                                                                className="p-2 text-black/50 dark:text-white/50 rounded-full hover:bg-light-secondary dark:hover:bg-dark-secondary transition-colors duration-200 hover:text-black dark:hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 dark:focus-visible:ring-offset-dark-primary"
+                                                                                                className="p-1.5 text-[var(--text-muted)] rounded-md hover:bg-[var(--bg-secondary)] transition-colors duration-150 hover:text-[var(--text-secondary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-1"
                                                                                         >
                                                                                                 {speechStatus ===
                                                                                                 "started" ? (
@@ -431,16 +427,14 @@ const MessageBox = ({
                                                                                 0 &&
                                                                         hasContent &&
                                                                         !loading && (
-                                                                                <div className="mt-6">
-                                                                                        <div className="flex flex-row items-center space-x-2 mb-4">
+                                                                                <div className="mt-4">
+                                                                                        <div className="flex flex-row items-center space-x-1.5 mb-3">
                                                                                                 <Layers3
-                                                                                                        className="text-black/70 dark:text-white/70"
-                                                                                                        size={
-                                                                                                                18
-                                                                                                        }
+                                                                                                        className="text-[var(--text-secondary)]"
+                                                                                                        size={15}
                                                                                                         aria-hidden="true"
                                                                                                 />
-                                                                                                <h3 className="text-black/70 dark:text-white/70 font-medium text-lg">
+                                                                                                <h3 className="text-[var(--text-secondary)] font-medium text-sm">
                                                                                                         Related
                                                                                                 </h3>
                                                                                         </div>
@@ -455,7 +449,7 @@ const MessageBox = ({
                                                                                                                                 i
                                                                                                                         }
                                                                                                                 >
-                                                                                                                        <div className="h-px bg-light-200/40 dark:bg-dark-200/40" />
+                                                                                                                        <div className="h-px bg-[var(--border-primary)]" />
                                                                                                                          <button
                                                                                                                                  onClick={() =>
                                                                                                                                          sendMessage(
@@ -463,30 +457,30 @@ const MessageBox = ({
                                                                                                                                          )
                                                                                                                                  }
                                                                                                                                  aria-label={`Follow up: ${suggestion}`}
-                                                                                                                                 className="group w-full py-3.5 text-left transition-colors duration-200"
-                                                                                                                        >
-                                                                                                                                <div className="flex items-center justify-between gap-3">
-                                                                                                                                        <div className="flex flex-row space-x-3 items-center">
-                                                                                                                                                <CornerDownRight
-                                                                                                                                                        size={
-                                                                                                                                                                14
-                                                                                                                                                        }
-                                                                                                                                                        className="group-hover:text-[var(--accent)] transition-colors duration-200 flex-shrink-0 text-black/30 dark:text-white/30"
-                                                                                                                                                />
-                                                                                                                                                <p className="text-sm text-black/60 dark:text-white/60 group-hover:text-[var(--accent)] transition-colors duration-200 leading-relaxed">
-                                                                                                                                                        {
-                                                                                                                                                                suggestion
-                                                                                                                                                        }
-                                                                                                                                                </p>
-                                                                                                                                        </div>
-                                                                                                                                        <Plus
-                                                                                                                                                size={
-                                                                                                                                                        14
-                                                                                                                                                }
-                                                                                                                                                className="text-black/25 dark:text-white/25 group-hover:text-[var(--accent)] transition-colors duration-200 flex-shrink-0"
-                                                                                                                                        />
-                                                                                                                                </div>
-                                                                                                                        </button>
+                                                                                                                                 className="group w-full py-3 text-left transition-colors duration-150"
+                                                                                                                         >
+                                                                                                                                 <div className="flex items-center justify-between gap-3">
+                                                                                                                                         <div className="flex flex-row space-x-2.5 items-center">
+                                                                                                                                                 <CornerDownRight
+                                                                                                                                                         size={
+                                                                                                                                                                 12
+                                                                                                                                                         }
+                                                                                                                                                         className="group-hover:text-[var(--accent)] transition-colors duration-150 flex-shrink-0 text-[var(--text-muted)]"
+                                                                                                                                                 />
+                                                                                                                                                 <p className="text-[13px] text-[var(--text-secondary)] group-hover:text-[var(--accent)] transition-colors duration-150 leading-relaxed">
+                                                                                                                                                         {
+                                                                                                                                                                 suggestion
+                                                                                                                                                         }
+                                                                                                                                                 </p>
+                                                                                                                                         </div>
+                                                                                                                                         <Plus
+                                                                                                                                                 size={
+                                                                                                                                                         12
+                                                                                                                                                 }
+                                                                                                                                                 className="text-[var(--text-muted)] group-hover:text-[var(--accent)] transition-colors duration-150 flex-shrink-0"
+                                                                                                                                         />
+                                                                                                                                 </div>
+                                                                                                                         </button>
                                                                                                                 </div>
                                                                                                         ),
                                                                                                 )}

@@ -43,31 +43,31 @@ const Copy = ({
       <DropdownMenu.Trigger asChild>
         <button
           aria-label={copied ? 'Copied' : 'Copy response'}
-          className="p-2 text-black/70 dark:text-white/70 rounded-full hover:bg-light-secondary dark:hover:bg-dark-secondary transition-colors duration-200 hover:text-black dark:hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 dark:focus-visible:ring-offset-dark-primary"
+          className="p-1.5 text-[var(--text-muted)] rounded-md hover:bg-[var(--bg-secondary)] hover:text-[var(--text-secondary)] transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-1"
         >
-          {copied ? <Check size={16} aria-hidden="true" /> : <ClipboardList size={16} aria-hidden="true" />}
+          {copied ? <Check size={14} aria-hidden="true" /> : <ClipboardList size={14} aria-hidden="true" />}
         </button>
       </DropdownMenu.Trigger>
       
       <DropdownMenu.Portal>
         <DropdownMenu.Content
           align="start"
-          sideOffset={8}
-          className="z-50 min-w-[8rem] overflow-hidden rounded-lg border border-light-200 dark:border-dark-200 bg-white dark:bg-[#111111] p-1 shadow-md animate-in fade-in-80 zoom-in-95"
+          sideOffset={6}
+          className="z-50 min-w-[8rem] overflow-hidden rounded-md border border-[var(--border-primary)] bg-[var(--bg-primary)] p-1 shadow-sm animate-in fade-in-80 zoom-in-95"
         >
           <DropdownMenu.Item
             onClick={() => handleCopy(false)}
-            className="flex cursor-pointer select-none items-center gap-2 rounded-md px-2 py-1.5 text-sm outline-none transition-colors hover:bg-light-secondary dark:hover:bg-dark-secondary text-black dark:text-white focus:bg-light-200 dark:focus:bg-dark-200"
+            className="flex cursor-pointer select-none items-center gap-2 rounded px-2 py-1 text-[12px] outline-none transition-colors hover:bg-[var(--bg-secondary)] text-[var(--text-primary)] focus:bg-[var(--bg-secondary)]"
           >
-            <FileText size={14} className="text-black/70 dark:text-white/70" />
+            <FileText size={12} className="text-[var(--text-muted)]" />
             <span>Copy text only</span>
           </DropdownMenu.Item>
           
           <DropdownMenu.Item
             onClick={() => handleCopy(true)}
-            className="flex cursor-pointer select-none items-center gap-2 rounded-md px-2 py-1.5 text-sm outline-none transition-colors hover:bg-light-secondary dark:hover:bg-dark-secondary text-black dark:text-white focus:bg-light-200 dark:focus:bg-dark-200"
+            className="flex cursor-pointer select-none items-center gap-2 rounded px-2 py-1 text-[12px] outline-none transition-colors hover:bg-[var(--bg-secondary)] text-[var(--text-primary)] focus:bg-[var(--bg-secondary)]"
           >
-            <CopyIcon size={14} className="text-black/70 dark:text-white/70" />
+            <CopyIcon size={12} className="text-[var(--text-muted)]" />
             <span>Copy with sources</span>
           </DropdownMenu.Item>
         </DropdownMenu.Content>

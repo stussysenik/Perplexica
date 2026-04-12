@@ -1,4 +1,4 @@
-import { ArrowLeftRight, Repeat } from 'lucide-react';
+import { Repeat } from 'lucide-react';
 
 const Rewrite = ({
   rewrite,
@@ -11,9 +11,9 @@ const Rewrite = ({
     <button
       onClick={() => rewrite(messageId)}
       aria-label="Regenerate response"
-      className="p-2 text-black/70 dark:text-white/70 rounded-full hover:bg-light-secondary dark:hover:bg-dark-secondary transition-colors duration-200 hover:text-black dark:hover:text-white flex flex-row items-center space-x-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 dark:focus-visible:ring-offset-dark-primary"
+      className="p-1.5 text-[var(--text-muted)] rounded-md hover:bg-[var(--bg-secondary)] hover:text-[var(--text-secondary)] transition-colors duration-150 flex flex-row items-center space-x-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-1"
     >
-      <Repeat size={16} aria-hidden="true" />
+      <Repeat size={14} aria-hidden="true" />
     </button>
   );
 };

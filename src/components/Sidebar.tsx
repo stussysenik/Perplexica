@@ -35,20 +35,18 @@ const Sidebar = ({ children }: { children: React.ReactNode }) => {
         return (
                 <div>
                         {/* Desktop sidebar */}
-                        <div className="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-[72px] lg:flex-col">
-                                <div className="flex grow flex-col items-center justify-between gap-y-5 bg-light-primary dark:bg-dark-primary border-r border-light-200 dark:border-dark-200 px-2 py-6">
+                        <div className="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-[56px] lg:flex-col">
+                                <div className="flex grow flex-col items-center justify-between gap-y-5 bg-[var(--bg-primary)] border-r border-[var(--border-primary)] px-1.5 py-4">
                                         <div className="flex flex-col items-center gap-2">
                                                 <a
-                                                        className="p-2.5 rounded-xl bg-[var(--accent)] text-white hover:opacity-90 transition-colors duration-200 shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2"
+                                                        className="p-2 rounded-md bg-[var(--accent)] text-white hover:opacity-90 transition-opacity duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-1"
                                                         href="/"
                                                         aria-label="New chat"
                                                 >
                                                         <Plus
-                                                                size={18}
+                                                                size={16}
                                                                 className="cursor-pointer"
-                                                                strokeWidth={
-                                                                        2.5
-                                                                }
+                                                                strokeWidth={2}
                                                                 aria-hidden="true"
                                                         />
                                                 </a>
@@ -60,29 +58,28 @@ const Sidebar = ({ children }: { children: React.ReactNode }) => {
                                                                 key={i}
                                                                 href={link.href}
                                                                 className={cn(
-                                                                        "relative flex flex-col items-center justify-center gap-0.5 cursor-pointer w-full py-2.5 rounded-xl transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2",
+                                                                        "flex flex-col items-center justify-center gap-0.5 cursor-pointer w-full py-2 transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-1",
                                                                         link.active
                                                                                 ? "text-[var(--accent)]"
-                                                                                : "text-black/40 dark:text-white/40 hover:text-black/70 dark:hover:text-white/70",
+                                                                                : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]",
                                                                 )}
                                                         >
                                                                 <div
                                                                         className={cn(
-                                                                                "rounded-xl p-2 transition-colors duration-200",
+                                                                                "rounded-md p-1.5 transition-colors duration-150",
                                                                                 link.active &&
-                                                                                        "bg-[var(--accent)]/10",
+                                                                                        "bg-[var(--accent-subtle)]",
                                                                                 !link.active &&
-                                                                                        "hover:bg-light-secondary dark:hover:bg-dark-secondary",
+                                                                                        "hover:bg-[var(--bg-secondary)]",
                                                                         )}
                                                                 >
                                                                         <link.icon
-                                                                                size={
-                                                                                        20
-                                                                                }
+                                                                                size={18}
+                                                                                strokeWidth={link.active ? 2 : 1.5}
                                                                                 aria-hidden="true"
                                                                         />
                                                                 </div>
-                                                                <p className="text-[10px] font-medium">
+                                                                <p className="text-[9px] font-medium tracking-tight">
                                                                         {
                                                                                 link.label
                                                                         }
@@ -99,24 +96,21 @@ const Sidebar = ({ children }: { children: React.ReactNode }) => {
                         </div>
 
                         {/* Mobile bottom navigation */}
-                        <div className="fixed bottom-0 left-0 right-0 z-50 lg:hidden border-t border-light-200 dark:border-dark-200 bg-light-primary/95 dark:bg-dark-primary/95 backdrop-blur-md safe-bottom">
-                                <div className="flex flex-row items-center justify-around px-2 py-2">
+                        <div className="fixed bottom-0 left-0 right-0 z-50 lg:hidden border-t border-[var(--border-primary)] bg-[var(--bg-primary)] safe-bottom">
+                                <div className="flex flex-row items-center justify-around px-2 py-1.5">
                                         {navLinks.map((link, i) => (
                                                 <Link
                                                         href={link.href}
                                                         key={i}
                                                         className={cn(
-                                                                "relative flex flex-col items-center gap-0.5 py-1.5 px-4 rounded-xl transition-all duration-200",
+                                                                "flex flex-col items-center gap-0.5 py-1.5 px-5 transition-colors duration-150",
                                                                 link.active
                                                                         ? "text-[var(--accent)]"
-                                                                        : "text-black/40 dark:text-white/40",
+                                                                        : "text-[var(--text-muted)]",
                                                         )}
                                                 >
-                                                        {link.active && (
-                                                                <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-5 h-0.5 rounded-full bg-[var(--accent)]" />
-                                                        )}
-                                                        <link.icon size={20} />
-                                                        <p className="text-[10px] font-medium">
+                                                        <link.icon size={18} strokeWidth={link.active ? 2 : 1.5} />
+                                                        <p className="text-[10px] font-medium tracking-tight">
                                                                 {link.label}
                                                         </p>
                                                 </Link>
