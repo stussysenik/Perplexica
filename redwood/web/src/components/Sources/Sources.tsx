@@ -59,9 +59,13 @@ function SourceCard({ source, index }: { source: Source; index: number }) {
   return (
     <div
       id={`source-${index}`}
-      className="border border-[var(--border-default)] border-l-[3px] border-l-[var(--border-accent)] rounded-spine p-3
-        hover:bg-[var(--surface-whisper)] transition-colors duration-[180ms]"
+      className="group relative border border-[var(--border-default)] rounded-spine p-3
+        hover:border-[var(--border-accent)] hover:bg-[var(--surface-whisper)] 
+        transition-all duration-[240ms] ease-[cubic-bezier(0.16,1,0.3,1)]"
     >
+      {/* Visual Spine — replaced the side-stripe border with an absolute positioned element for better control */}
+      <div className="absolute left-0 top-3 bottom-3 w-[2px] bg-[var(--border-accent)] opacity-0 group-hover:opacity-100 transition-opacity duration-240" />
+
       <a
         href={isFile ? undefined : url}
         target="_blank"
@@ -75,16 +79,16 @@ function SourceCard({ source, index }: { source: Source; index: number }) {
               <img
                 src={`https://www.google.com/s2/favicons?domain=${hostname}&sz=16`}
                 alt=""
-                className="w-3.5 h-3.5 rounded-sm outline outline-1 outline-[var(--border-default)]"
+                className="w-3.5 h-3.5 rounded-sm outline outline-1 outline-[var(--border-default)] grayscale group-hover:grayscale-0 transition-all duration-300"
                 loading="lazy"
               />
             )}
-            <span className="text-caption text-[var(--text-muted)] normal-case tracking-normal">
+            <span className="text-caption text-[var(--text-muted)] group-hover:text-[var(--text-primary)] transition-colors normal-case tracking-normal">
               {isFile ? 'Uploaded file' : hostname}
             </span>
           </div>
           {/* Citation index */}
-          <span className="ml-auto text-[10px] font-medium text-[var(--text-accent)] border border-[var(--border-accent)] rounded-[3px] px-1 leading-[18px]">
+          <span className="ml-auto text-[10px] font-semibold text-[var(--text-accent)] bg-[var(--surface-whisper)] border border-[var(--border-accent)] rounded-[4px] w-5 h-5 flex items-center justify-center">
             {index}
           </span>
         </div>
@@ -95,17 +99,16 @@ function SourceCard({ source, index }: { source: Source; index: number }) {
 
       {/* Collapsible extracted text */}
       {source.content && (
-        <div className="mt-2 pt-2 border-t border-[var(--border-default)]">
-          <TextAction
+        <div className="mt-2.5 pt-2.5 border-t border-[var(--border-default)]">
+          <button
             onClick={() => setExpanded(!expanded)}
-            label={expanded ? 'Hide extracted text' : 'View extracted text'}
-            variant="accent"
-            className="text-[10px]"
-          />
+            className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--text-accent)] hover:underline underline-offset-2"
+          >
+            {expanded ? 'Hide full extract' : 'View full extract'}
+          </button>
           {expanded && (
-            <div className="mt-1.5 pl-3 text-[11px] leading-relaxed text-[var(--text-secondary)] border-l-[2px] border-l-[var(--border-accent)] max-h-32 overflow-y-auto">
-              {source.content.slice(0, 300)}
-              {source.content.length > 300 && '...'}
+            <div className="mt-2 pl-3 text-[11px] leading-relaxed text-[var(--text-secondary)] border-l border-[var(--border-default)] max-h-32 overflow-y-auto scrollbar-thin">
+              {source.content}
             </div>
           )}
         </div>

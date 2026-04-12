@@ -1,0 +1,15 @@
+node_modules
+.redwood
+.vscode
+.yarn
+web/dist
+api/dist
+.env
+.env.local
+README.md
+redwood.toml
+package.json
+yarn.lock
+.yarnrc.yml
+scripts
+*.log

@@ -93,7 +93,7 @@ const MessageBox = ({ message, isLast, loading, chatId, onSearch }: Props) => {
       {message.answer && (
         <div className="space-y-4">
           {isError ? (
-            <div className="p-4 border border-red-200 dark:border-red-800 border-l-[3px] border-l-red-500 rounded-spine text-small text-red-700 dark:text-red-300">
+            <div className="p-4 border border-red-500/30 bg-red-500/5 rounded-spine text-small text-red-700 dark:text-red-400">
               {message.answer}
             </div>
           ) : (

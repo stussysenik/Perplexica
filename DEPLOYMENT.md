@@ -54,19 +54,18 @@ This is the architecture described in `PROGRESS.md`:
 - **Frontend (Redwood)**: Deploy to [Vercel](https://vercel.com).
 - **Database**: PostgreSQL with `pgvector` extension.
 
-#### Phoenix to Fly.io
-```bash
-cd phoenix
-fly launch
-fly secrets set NVIDIA_NIM_API_KEY=... BRAVE_SEARCH_API_KEY=...
-```
+#### Backend (Phoenix) to Fly.io
+1. `cd phoenix`
+2. `fly launch` (use the existing `fly.toml`)
+3. `fly secrets set NVIDIA_NIM_API_KEY=... BRAVE_SEARCH_API_KEY=... SECRET_KEY_BASE=$(mix phx.gen.secret)`
+4. `fly deploy`
 
-#### Redwood to Vercel
-Connect your repository to Vercel and set the root directory to `redwood`.
-Set the following environment variables:
-- `PHOENIX_URL`: The URL of your deployed Phoenix backend.
+#### Frontend (Redwood) to Fly.io
+1. `cd redwood`
+2. `fly launch --no-deploy` (use the existing `fly.toml`)
+3. `fly deploy --build-arg PHOENIX_URL=https://perplexica-search.fly.dev` (replace with your actual backend URL)
 
-### 3. Docker Monolith (Legacy)
+### 3. Multi-Service Cloud (Railway + Vercel)
 
 The root directory contains a `Dockerfile` and `docker-compose.yml` for the legacy Next.js version of Perplexica.
 
