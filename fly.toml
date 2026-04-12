@@ -1,4 +1,4 @@
-app = 'perplexica'
+app = 'perplexica-app'
 primary_region = 'sjc'
 kill_signal = 'SIGTERM'
 

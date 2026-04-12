@@ -1,9 +1,10 @@
 FROM node:20-alpine AS builder
+RUN apk add --no-cache python3 make g++
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 COPY . .
-RUN npm run build
+RUN npx next build
 
 FROM node:20-alpine AS runner
 WORKDIR /app
@@ -15,7 +16,6 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/drizzle ./drizzle
-COPY --from=builder /app/data ./data
 
 RUN mkdir -p /app/data && chown -R nextjs:nodejs /app/data
 

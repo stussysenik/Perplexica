@@ -55,6 +55,15 @@ if config_env() == :prod do
 
   host = System.get_env("PHX_HOST") || "example.com"
 
+  cors_origins =
+    System.get_env("CORS_ORIGINS")
+    |> case do
+      nil -> ["https://#{host}", "http://localhost:8910"]
+      str -> String.split(str, ",")
+    end
+
+  config :perplexica, :cors_origins, cors_origins
+
   config :perplexica, :dns_cluster_query, System.get_env("DNS_CLUSTER_QUERY")
 
   config :perplexica, PerplexicaWeb.Endpoint,

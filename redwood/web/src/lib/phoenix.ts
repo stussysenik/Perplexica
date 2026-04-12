@@ -1,10 +1,15 @@
-const PHOENIX_URL =
-  typeof window !== 'undefined'
-    ? (window as any).__PHOENIX_URL__ || 'http://localhost:4000'
-    : process.env.PHOENIX_URL || 'http://localhost:4000'
+const getPhoenixUrl = () => {
+  if (typeof window !== 'undefined') {
+    return (window as any).__PHOENIX_URL__ || process.env.PHOENIX_URL || ''
+  }
+  return process.env.PHOENIX_URL || 'http://localhost:4000'
+}
+
+export const phoenixUrl = getPhoenixUrl()
 
 export const phoenixGql = async (query: string, variables?: Record<string, any>) => {
-  const res = await fetch(`${PHOENIX_URL}/api/graphql`, {
+  const url = phoenixUrl ? `${phoenixUrl}/api/graphql` : '/api/graphql'
+  const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ query, variables }),
@@ -14,7 +19,11 @@ export const phoenixGql = async (query: string, variables?: Record<string, any>)
   return data
 }
 
-export const phoenixUrl = PHOENIX_URL
-
 /** WebSocket URL for Absinthe subscriptions */
-export const phoenixWsUrl = phoenixUrl.replace(/^http/, 'ws') + '/socket'
+export const phoenixWsUrl = (() => {
+  if (!phoenixUrl) {
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+    return `${protocol}//${window.location.host}/socket`
+  }
+  return phoenixUrl.replace(/^http/, 'ws') + '/socket'
+})()
