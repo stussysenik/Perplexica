@@ -24,11 +24,36 @@ config :perplexica, PerplexicaWeb.Endpoint,
   http: [port: String.to_integer(System.get_env("PORT", "4000"))]
 
 # ----- GitHub OAuth gate (auth-github-gate) -------------------------------
-# Ueberauth GitHub strategy credentials. Missing values lock sign-in down
-# so RequireOwner rejects everything.
+# Ueberauth GitHub strategy credentials. Read env vars once, trim whitespace
+# so a stray space in .env.local doesn't become part of the value, and fail
+# fast with an actionable message if either is missing — otherwise
+# ueberauth_github crashes with a confusing CaseClauseError the first time a
+# user hits /auth/github (its check_credential/2 has no nil -> clause).
+gh_client_id = System.get_env("GITHUB_CLIENT_ID") |> Kernel.||("") |> String.trim()
+gh_client_secret = System.get_env("GITHUB_CLIENT_SECRET") |> Kernel.||("") |> String.trim()
+
+if config_env() != :test and (gh_client_id == "" or gh_client_secret == "") do
+  raise """
+  GitHub OAuth credentials missing — Phoenix cannot start.
+
+  Set GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET in the environment before
+  starting Phoenix. In local dev, source the project .env.local into your
+  shell BEFORE running `iex -S mix phx.server`:
+
+      set -a
+      source .env.local
+      set +a
+      echo $GITHUB_CLIENT_ID   # should print a non-empty value
+
+  On Railway, set them with `railway variables --set "GITHUB_CLIENT_ID=..."`.
+
+  Currently: GITHUB_CLIENT_ID=#{inspect(gh_client_id)}, GITHUB_CLIENT_SECRET=#{if gh_client_secret == "", do: "\"\"", else: "[present]"}
+  """
+end
+
 config :ueberauth, Ueberauth.Strategy.Github.OAuth,
-  client_id: System.get_env("GITHUB_CLIENT_ID"),
-  client_secret: System.get_env("GITHUB_CLIENT_SECRET")
+  client_id: gh_client_id,
+  client_secret: gh_client_secret
 
 # Allowlist of GitHub usernames that may reach /api/graphql. Comma-separated,
 # matched case-insensitively.
@@ -38,7 +63,7 @@ github_allowlist =
   |> Enum.map(&String.trim/1)
   |> Enum.map(&String.downcase/1)
 
-if github_allowlist == [] do
+if github_allowlist == [] and config_env() != :test do
   require Logger
   Logger.warning("GITHUB_ALLOWLIST is empty — no users can sign in")
 end
