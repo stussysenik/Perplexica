@@ -6,7 +6,7 @@ import { variants, transition } from 'src/lib/motion'
 import Sources from 'src/components/Sources/Sources'
 import AnswerActionBar from 'src/components/Chat/AnswerActionBar'
 import TableOfContents from 'src/components/Chat/TableOfContents'
-import SearchProgress from 'src/components/Chat/SearchProgress'
+import SearchProgress, { type SearchMode } from 'src/components/Chat/SearchProgress'
 
 interface Props {
   message: Message
@@ -14,9 +14,10 @@ interface Props {
   loading: boolean
   chatId: string
   onSearch?: (query: string) => void
+  mode?: SearchMode
 }
 
-const MessageBox = ({ message, isLast, loading, chatId, onSearch }: Props) => {
+const MessageBox = ({ message, isLast, loading, chatId, onSearch, mode }: Props) => {
   const isSearching = message.status === 'answering'
   const isError = message.status === 'error'
   const answerRef = useRef<HTMLDivElement>(null)
@@ -47,12 +48,25 @@ const MessageBox = ({ message, isLast, loading, chatId, onSearch }: Props) => {
         const citationIndex = supEl.textContent?.trim()
         if (citationIndex && /^\d+$/.test(citationIndex)) {
           e.preventDefault()
-          const sourceEl = document.getElementById(`source-${citationIndex}`)
-          sourceEl?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-          sourceEl?.classList.add('ring-2', 'ring-[var(--border-accent)]', 'ring-offset-2')
-          setTimeout(() => {
-            sourceEl?.classList.remove('ring-2', 'ring-[var(--border-accent)]', 'ring-offset-2')
-          }, 1500)
+
+          // Find the closest sources panel toggle (if collapsed) and open
+          // it first so `#source-N` is actually in the DOM before scroll.
+          const article = supEl.closest<HTMLElement>('.max-w-3xl, main, article') || document.body
+          const toggle = article.querySelector<HTMLButtonElement>('button[aria-controls="sources-panel"]')
+          if (toggle && toggle.getAttribute('aria-expanded') === 'false') {
+            toggle.click()
+          }
+
+          // Defer the scroll by one frame so the newly mounted source card
+          // is laid out before we try to scroll it into view.
+          requestAnimationFrame(() => {
+            const sourceEl = document.getElementById(`source-${citationIndex}`)
+            sourceEl?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+            sourceEl?.classList.add('ring-2', 'ring-[var(--border-accent)]', 'ring-offset-2')
+            setTimeout(() => {
+              sourceEl?.classList.remove('ring-2', 'ring-[var(--border-accent)]', 'ring-offset-2')
+            }, 1500)
+          })
         }
       }
     }
@@ -79,6 +93,9 @@ const MessageBox = ({ message, isLast, loading, chatId, onSearch }: Props) => {
         <SearchProgress
           phase={message.phase || 'classifying'}
           sourceCount={message.sourceCount || 0}
+          subSteps={message.subSteps}
+          startedAt={message.startedAt}
+          mode={mode}
         />
       )}
 

@@ -1,7 +1,8 @@
 import { useState, useCallback, useRef } from 'react'
 import { phoenixGql } from './phoenix'
 import { subscribeToSearch, type SearchEvent } from './phoenix-ws'
-import type { SearchPhase } from 'src/components/Chat/SearchProgress'
+import { useSettings } from 'src/lib/settings'
+import type { SearchPhase, SearchMode } from 'src/components/Chat/SearchProgress'
 
 export interface Source {
   content: string
@@ -9,6 +10,11 @@ export interface Source {
     url: string
     title: string
   }
+}
+
+export interface SearchSubStep {
+  type: 'searching' | 'searchResults' | 'reading' | 'reasoning'
+  data: any
 }
 
 export interface Message {
@@ -21,28 +27,50 @@ export interface Message {
   createdAt?: string
   phase?: SearchPhase
   sourceCount?: number
+  subSteps?: SearchSubStep[]
+  /** Wall-clock ms when sendMessage was called, used for ETA. */
+  startedAt?: number
 }
 
 interface UseSearchReturn {
   messages: Message[]
   loading: boolean
   sendMessage: (query: string) => Promise<void>
-  mode: string
-  setMode: (mode: string) => void
+  mode: SearchMode
+  setMode: (mode: SearchMode) => void
   chatId: string
   clearChat: () => void
 }
 
+/** Infer the current pipeline phase from the latest research sub-step. */
+function phaseFromSubSteps(subSteps: SearchSubStep[], m: Message): Message {
+  const lastStep = subSteps[subSteps.length - 1]
+  let phase: SearchPhase = m.phase || 'searching'
+
+  if (lastStep) {
+    if (lastStep.type === 'searching' || lastStep.type === 'searchResults') phase = 'searching'
+    else if (lastStep.type === 'reading') phase = 'analyzing'
+    else if (lastStep.type === 'reasoning') phase = 'analyzing'
+  }
+
+  return { ...m, subSteps, phase }
+}
+
 export function useSearch(): UseSearchReturn {
+  const { defaultMode } = useSettings()
   const [messages, setMessages] = useState<Message[]>([])
   const [loading, setLoading] = useState(false)
-  const [mode, setMode] = useState('speed')
+  const [mode, setMode] = useState<SearchMode>(defaultMode)
   const chatIdRef = useRef(crypto.randomUUID())
   const unsubRef = useRef<(() => void) | null>(null)
+  // Tracks which messageIds already have a polling fallback running,
+  // so repeated subscription errors don't spawn a cascade of pollers.
+  const pollingActiveRef = useRef<Set<string>>(new Set())
 
   const clearChat = useCallback(() => {
     unsubRef.current?.()
     unsubRef.current = null
+    pollingActiveRef.current.clear()
     chatIdRef.current = crypto.randomUUID()
     setMessages([])
     setLoading(false)
@@ -58,6 +86,10 @@ export function useSearch(): UseSearchReturn {
   /** Polling fallback if WebSocket subscription fails. */
   const fallbackPoll = useCallback(
     async (chatId: string, msgId: string) => {
+      // Dedupe: a single message should only ever have ONE polling loop.
+      if (pollingActiveRef.current.has(msgId)) return
+      pollingActiveRef.current.add(msgId)
+
       for (let i = 0; i < 40; i++) {
         await new Promise(r => setTimeout(r, 2000))
 
@@ -84,6 +116,7 @@ export function useSearch(): UseSearchReturn {
               answer: textBlock?.data || '',
             }))
             setLoading(false)
+            pollingActiveRef.current.delete(msgId)
             return
           }
 
@@ -95,6 +128,7 @@ export function useSearch(): UseSearchReturn {
               answer: 'Search encountered an error.',
             }))
             setLoading(false)
+            pollingActiveRef.current.delete(msgId)
             return
           }
         } catch {
@@ -109,6 +143,7 @@ export function useSearch(): UseSearchReturn {
         answer: 'Search timed out.',
       }))
       setLoading(false)
+      pollingActiveRef.current.delete(msgId)
     },
     [updateMsg]
   )
@@ -129,13 +164,18 @@ export function useSearch(): UseSearchReturn {
         answer: '',
         phase: 'classifying',
         sourceCount: 0,
+        subSteps: [],
+        startedAt: Date.now(),
       }
 
       setMessages(prev => [...prev, newMsg])
       setLoading(true)
 
       try {
-        // Build conversation history from previous messages for context
+        // Build conversation history from previous messages for context.
+        // Using GraphQL variables (not string interpolation) is the only safe
+        // way to pass input objects — interpolating JSON gives quoted keys
+        // which are not valid GraphQL object syntax.
         const history = messages
           .filter(m => m.status === 'completed')
           .flatMap(m => [
@@ -143,19 +183,24 @@ export function useSearch(): UseSearchReturn {
             ...(m.answer ? [{ role: 'assistant', content: m.answer }] : []),
           ])
 
-        const historyParam = history.length > 0
-          ? `, history: ${JSON.stringify(history)}`
-          : ''
-
-        const res = await phoenixGql(`mutation {
-          startSearch(
-            query: ${JSON.stringify(query)},
-            chatId: ${JSON.stringify(chatId)},
-            messageId: ${JSON.stringify(msgId)},
-            optimizationMode: ${JSON.stringify(mode)}
-            ${historyParam}
-          ) { sessionId status }
-        }`)
+        const res = await phoenixGql(
+          `mutation StartSearch(
+            $query: String!,
+            $chatId: String!,
+            $messageId: String!,
+            $optimizationMode: String,
+            $history: [HistoryEntry!]
+          ) {
+            startSearch(
+              query: $query,
+              chatId: $chatId,
+              messageId: $messageId,
+              optimizationMode: $optimizationMode,
+              history: $history
+            ) { sessionId status }
+          }`,
+          { query, chatId, messageId: msgId, optimizationMode: mode, history }
+        )
 
         const sessionId = res.data.startSearch.sessionId
 
@@ -167,7 +212,8 @@ export function useSearch(): UseSearchReturn {
                 if (!block) break
 
                 if (block.type === 'research') {
-                  updateMsg(msgId, m => ({ ...m, phase: 'searching' }))
+                  const subSteps: SearchSubStep[] = block.subSteps || []
+                  updateMsg(msgId, m => phaseFromSubSteps(subSteps, m))
                 } else if (block.type === 'source') {
                   const sources: Source[] = block.data || []
                   updateMsg(msgId, m => ({
@@ -187,7 +233,18 @@ export function useSearch(): UseSearchReturn {
               }
 
               case 'update_block': {
-                updateMsg(msgId, m => ({ ...m, phase: 'searching' }))
+                // Apply the RFC6902 patch locally so research sub-steps stream
+                // into the UI one at a time (searching → reading → reasoning).
+                const patch = event.patch || []
+                updateMsg(msgId, m => {
+                  const next: SearchSubStep[] = [...(m.subSteps || [])]
+                  for (const op of patch as any[]) {
+                    if (op?.op === 'replace' && op.path === '/subSteps') {
+                      return phaseFromSubSteps(op.value || [], m)
+                    }
+                  }
+                  return phaseFromSubSteps(next, m)
+                })
                 break
               }
 

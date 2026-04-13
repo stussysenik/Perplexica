@@ -13,7 +13,11 @@ function getAbsintheSocket() {
   if (!absintheSocket) {
     socket = new Socket(phoenixWsUrl, {
       reconnectAfterMs: (tries: number) => Math.min(tries * 500, 5000),
+      // Bump the per-push timeout so a slow first-join doesn't immediately
+      // trip onError and cascade the client into the polling fallback.
+      timeout: 20000,
     })
+    socket.connect()
     absintheSocket = AbsintheSocket.create(socket)
   }
   return absintheSocket

@@ -1,15 +1,15 @@
 import { ReactNode } from 'react'
-import { useLocation } from '@redwoodjs/router'
+import { useLocation, Link } from '@redwoodjs/router'
 import { useTheme } from 'src/lib/theme'
+import { motion } from 'framer-motion'
 import {
   MagnifyingGlass,
   Compass,
   Books,
-  GearSix,
   Sun,
   Moon,
+  GearSix,
 } from '@phosphor-icons/react'
-import TextAction from 'src/components/ui/TextAction'
 
 interface Props {
   children: ReactNode
@@ -20,6 +20,11 @@ const navItems = [
   { href: '/discover', label: 'Discover', icon: Compass },
   { href: '/library', label: 'Library', icon: Books },
 ]
+
+// Spring: Jakub production-polish (no bounce, settles crisply)
+const PILL_SPRING = { type: 'spring' as const, duration: 0.38, bounce: 0 }
+// Icon pop: Emil fast — entering element ease-out
+const ICON_SPRING = { duration: 0.18, ease: [0.16, 1, 0.3, 1] as const }
 
 const AppLayout = ({ children }: Props) => {
   const { theme, toggle } = useTheme()
@@ -34,42 +39,76 @@ const AppLayout = ({ children }: Props) => {
       >
         Skip to content
       </a>
+
       {/* Sidebar — desktop only */}
       <aside className="hidden lg:flex flex-col border-r border-[var(--border-default)]">
-        {/* Logo */}
         <div className="p-4 flex items-center gap-3">
-          <span className="text-h3 font-semibold tracking-tight text-[var(--text-primary)]">
-            Perplexica
-          </span>
+          <Link
+            to="/"
+            onClick={(e) => {
+              // Always reset the chat when the brand is clicked, even if we're
+              // already on "/". Without this the Link is a no-op on the home
+              // route and stale messages stay on screen.
+              e.preventDefault()
+              window.dispatchEvent(new CustomEvent('fyoa:reset-chat'))
+              if (pathname !== '/') {
+                window.history.pushState({}, '', '/')
+                window.dispatchEvent(new PopStateEvent('popstate'))
+              }
+            }}
+            className="text-h3 font-semibold tracking-tight text-[var(--text-primary)] no-underline hover:opacity-70 transition-opacity duration-150"
+            aria-label="FYOA — Find Your Own Answer (start new search)"
+          >
+            FYOA
+          </Link>
         </div>
 
-        {/* Nav */}
         <nav className="flex-1 px-3 space-y-0.5" aria-label="Main navigation">
           {navItems.map(({ href, label, icon: Icon }) => {
             const active = pathname === href
             return (
-              <a
+              <Link
                 key={href}
-                href={href}
-                className={`
-                  flex items-center gap-3 px-3 py-2.5 rounded-spine text-small font-medium
-                  transition-colors duration-[180ms]
-                  ${active
-                    ? 'border-l-[3px] border-l-[var(--border-accent)] text-[var(--text-accent)] ml-[-3px]'
-                    : 'text-[var(--text-secondary)] hover:text-[var(--text-accent)]'
-                  }
-                `}
+                to={href}
+                className="relative flex items-center gap-3 px-3 py-2.5 rounded-spine text-small font-medium group"
                 aria-current={active ? 'page' : undefined}
               >
-                <Icon size={18} weight={active ? 'regular' : 'light'} />
-                <span>{label}</span>
-              </a>
+                {/* Sliding background pill — shared layout between active items */}
+                {active && (
+                  <motion.span
+                    layoutId="sidebar-pill"
+                    className="absolute inset-0 rounded-spine bg-[var(--surface-whisper)]"
+                    transition={PILL_SPRING}
+                  />
+                )}
+                <span
+                  className={`relative z-10 flex items-center gap-3 transition-colors duration-[180ms] ${
+                    active
+                      ? 'text-[var(--text-accent)]'
+                      : 'text-[var(--text-secondary)] group-hover:text-[var(--text-accent)]'
+                  }`}
+                >
+                  <Icon size={18} weight={active ? 'regular' : 'light'} />
+                  {label}
+                </span>
+              </Link>
             )
           })}
         </nav>
 
-        {/* Bottom actions */}
         <div className="p-3 border-t border-[var(--border-default)] space-y-0.5">
+          <Link
+            to="/settings"
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-spine text-small transition-colors duration-[180ms] ${
+              pathname === '/settings'
+                ? 'text-[var(--text-accent)] bg-[var(--surface-whisper)]'
+                : 'text-[var(--text-muted)] hover:text-[var(--text-accent)]'
+            }`}
+            aria-current={pathname === '/settings' ? 'page' : undefined}
+          >
+            <GearSix size={18} weight={pathname === '/settings' ? 'regular' : 'light'} />
+            <span>Settings</span>
+          </Link>
           <button
             onClick={toggle}
             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-spine text-small text-[var(--text-muted)] hover:text-[var(--text-accent)] transition-colors duration-[180ms]"
@@ -82,18 +121,47 @@ const AppLayout = ({ children }: Props) => {
 
       {/* Main content */}
       <main id="main-content" className="flex flex-col min-w-0 min-h-0">
-        {/* Mobile header — with safe area inset for notched devices */}
+        {/* Mobile header */}
         <div className="lg:hidden flex items-center justify-between px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top))] border-b border-[var(--border-default)]">
-          <span className="text-h3 font-semibold tracking-tight text-[var(--text-primary)]">
-            Perplexica
-          </span>
-          <button
-            onClick={toggle}
-            className="p-2 text-[var(--text-muted)] hover:text-[var(--text-accent)] transition-colors duration-[180ms]"
-            aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+          <Link
+            to="/"
+            onClick={(e) => {
+              // Always reset the chat when the brand is clicked, even if we're
+              // already on "/". Without this the Link is a no-op on the home
+              // route and stale messages stay on screen.
+              e.preventDefault()
+              window.dispatchEvent(new CustomEvent('fyoa:reset-chat'))
+              if (pathname !== '/') {
+                window.history.pushState({}, '', '/')
+                window.dispatchEvent(new PopStateEvent('popstate'))
+              }
+            }}
+            className="text-h3 font-semibold tracking-tight text-[var(--text-primary)] no-underline hover:opacity-70 transition-opacity duration-150"
+            aria-label="FYOA — Find Your Own Answer (start new search)"
           >
-            {theme === 'dark' ? <Sun size={18} weight="light" /> : <Moon size={18} weight="light" />}
-          </button>
+            FYOA
+          </Link>
+          <div className="flex items-center gap-1">
+            <Link
+              to="/settings"
+              aria-label="Settings"
+              aria-current={pathname === '/settings' ? 'page' : undefined}
+              className={`flex items-center justify-center w-10 h-10 rounded-spine transition-colors duration-[180ms] ${
+                pathname === '/settings'
+                  ? 'text-[var(--text-accent)] bg-[var(--surface-whisper)]'
+                  : 'text-[var(--text-muted)] hover:text-[var(--text-accent)]'
+              }`}
+            >
+              <GearSix size={18} weight={pathname === '/settings' ? 'regular' : 'light'} />
+            </Link>
+            <button
+              onClick={toggle}
+              className="flex items-center justify-center w-10 h-10 rounded-spine text-[var(--text-muted)] hover:text-[var(--text-accent)] transition-colors duration-[180ms]"
+              aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            >
+              {theme === 'dark' ? <Sun size={18} weight="light" /> : <Moon size={18} weight="light" />}
+            </button>
+          </div>
         </div>
 
         <div className="flex-1 flex flex-col min-h-0 pb-16 lg:pb-0">
@@ -106,31 +174,51 @@ const AppLayout = ({ children }: Props) => {
         className="fixed bottom-0 left-0 right-0 z-40 lg:hidden border-t border-[var(--border-default)] bg-[var(--surface-primary)] pb-[env(safe-area-inset-bottom)]"
         aria-label="Mobile navigation"
       >
-        <div className="flex items-center justify-around h-16">
+        <div className="flex items-center justify-around h-16 px-2">
           {navItems.map(({ href, label, icon: Icon }) => {
             const active = pathname === href
             return (
-              <a
+              <Link
                 key={href}
-                href={href}
-                className={`
-                  flex flex-col items-center justify-center gap-1 min-w-[64px] min-h-[44px] py-1
-                  transition-colors duration-[180ms]
-                  ${active
-                    ? 'text-[var(--text-accent)]'
-                    : 'text-[var(--text-muted)]'
-                  }
-                `}
+                to={href}
+                className="relative flex flex-col items-center justify-center gap-1 min-w-[72px] min-h-[44px] py-2 px-3 rounded-2xl transition-transform duration-100 active:scale-[0.93]"
+                style={{ WebkitTapHighlightColor: 'transparent' }}
                 aria-current={active ? 'page' : undefined}
               >
-                <Icon size={22} weight={active ? 'regular' : 'light'} />
-                <span className={`text-[10px] font-medium ${active ? 'text-[var(--text-accent)]' : ''}`}>
+                {/* Sliding pill — the ONLY active indicator. No top bar, no lime green. */}
+                {active && (
+                  <motion.span
+                    layoutId="bottom-nav-pill"
+                    className="absolute inset-0 rounded-2xl bg-[var(--surface-whisper)]"
+                    transition={PILL_SPRING}
+                  />
+                )}
+
+                {/*
+                 * Icon: key trick — when active becomes true, remount with
+                 * a pop (scale 0.8→1) so the weight switch feels intentional.
+                 * When deactivating, key='inactive' restores without animating.
+                 */}
+                <motion.span
+                  key={active ? `${href}-on` : `${href}-off`}
+                  initial={active ? { scale: 0.78, opacity: 0.5 } : false}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={ICON_SPRING}
+                  className={`relative z-10 transition-colors duration-[180ms] ${
+                    active ? 'text-[var(--text-accent)]' : 'text-[var(--text-muted)]'
+                  }`}
+                >
+                  <Icon size={22} weight={active ? 'regular' : 'light'} />
+                </motion.span>
+
+                <span
+                  className={`relative z-10 text-[10px] font-medium tracking-wide transition-colors duration-[180ms] ${
+                    active ? 'text-[var(--text-accent)]' : 'text-[var(--text-muted)]'
+                  }`}
+                >
                   {label}
                 </span>
-                {active && (
-                  <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-[var(--border-accent)] rounded-full" />
-                )}
-              </a>
+              </Link>
             )
           })}
         </div>

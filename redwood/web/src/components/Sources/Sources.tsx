@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
+import { CaretDown } from '@phosphor-icons/react'
 import type { Source } from 'src/lib/useSearch'
 import { variants, transition } from 'src/lib/motion'
 import TextAction from 'src/components/ui/TextAction'
@@ -9,6 +10,9 @@ interface Props {
 }
 
 const Sources = ({ sources }: Props) => {
+  // Collapsed by default so the answer text is the primary focus; users
+  // can open the panel explicitly or by clicking a footnote citation.
+  const [collapsed, setCollapsed] = useState(true)
   const [showAll, setShowAll] = useState(false)
   const displayed = showAll ? sources : sources.slice(0, 4)
 
@@ -16,35 +20,61 @@ const Sources = ({ sources }: Props) => {
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center gap-2">
-        <span className="text-caption text-[var(--text-muted)]">
-          Sources
-        </span>
-        <span className="text-caption text-[var(--text-muted)] font-normal normal-case tracking-normal">
+      <button
+        onClick={() => setCollapsed(v => !v)}
+        className="group flex items-center gap-2 text-caption text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors duration-[180ms]"
+        aria-expanded={!collapsed}
+        aria-controls="sources-panel"
+      >
+        <motion.span
+          animate={{ rotate: collapsed ? -90 : 0 }}
+          transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+          className="inline-flex"
+        >
+          <CaretDown size={12} weight="bold" />
+        </motion.span>
+        <span>Sources</span>
+        <span className="font-normal normal-case tracking-normal">
           ({sources.length})
         </span>
-      </div>
+      </button>
 
-      <motion.div
-        variants={variants.stagger}
-        initial="initial"
-        animate="animate"
-        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-2"
-      >
-        {displayed.map((source, idx) => (
-          <motion.div key={idx} variants={variants.slideUp} transition={transition.normal}>
-            <SourceCard source={source} index={idx + 1} />
+      <AnimatePresence initial={false}>
+        {!collapsed && (
+          <motion.div
+            id="sources-panel"
+            key="sources-panel"
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}
+            className="overflow-hidden"
+          >
+            <motion.div
+              variants={variants.stagger}
+              initial="initial"
+              animate="animate"
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-2"
+            >
+              {displayed.map((source, idx) => (
+                <motion.div key={idx} variants={variants.slideUp} transition={transition.normal}>
+                  <SourceCard source={source} index={idx + 1} />
+                </motion.div>
+              ))}
+            </motion.div>
+
+            {sources.length > 4 && (
+              <div className="mt-3">
+                <TextAction
+                  onClick={() => setShowAll(!showAll)}
+                  label={showAll ? 'Show less' : `View ${sources.length - 4} more sources`}
+                  variant="accent"
+                />
+              </div>
+            )}
           </motion.div>
-        ))}
-      </motion.div>
-
-      {sources.length > 4 && (
-        <TextAction
-          onClick={() => setShowAll(!showAll)}
-          label={showAll ? 'Show less' : `View ${sources.length - 4} more sources`}
-          variant="accent"
-        />
-      )}
+        )}
+      </AnimatePresence>
     </div>
   )
 }

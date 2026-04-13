@@ -8,6 +8,7 @@ const Routes = () => {
         <Route path="/" page={HomePage} name="home" />
         <Route path="/discover" page={DiscoverPage} name="discover" />
         <Route path="/library" page={LibraryPage} name="library" />
+        <Route path="/settings" page={SettingsPage} name="settings" />
       </Set>
       <Route path="/s/{slug}" page={SharedPage} name="shared" />
       <Route notfound page={NotFoundPage} />

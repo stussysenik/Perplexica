@@ -1,19 +1,40 @@
-import { useRef, useEffect } from 'react'
+import { useRef, useEffect, lazy, Suspense } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useLocation } from '@redwoodjs/router'
 import { useSearch } from 'src/lib/useSearch'
+import type { SearchMode } from 'src/components/Chat/SearchProgress'
 import { variants, transition } from 'src/lib/motion'
 import MessageBox from 'src/components/Chat/MessageBox'
 import MessageInput from 'src/components/Chat/MessageInput'
-import TextAction from 'src/components/ui/TextAction'
-import { MagnifyingGlass, Flask, ChartLineUp, BookOpen, Compass } from '@phosphor-icons/react'
+import VerifiedBadge from 'src/components/ui/VerifiedBadge'
+
+const ChessBoard = lazy(() => import('src/components/Chess/Chess'))
 
 const HomePage = () => {
   const { messages, loading, sendMessage, mode, setMode, clearChat, chatId } = useSearch()
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const { search } = useLocation()
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
+
+  // Handle query param on mount
+  useEffect(() => {
+    const params = new URLSearchParams(search)
+    const query = params.get('q')
+    if (query && messages.length === 0 && !loading) {
+      sendMessage(query)
+    }
+  }, [search, sendMessage, messages.length, loading])
+
+  // Clicking the FYOA brand in the AppLayout fires this event — we listen
+  // here so the chat resets even when the user is already on "/".
+  useEffect(() => {
+    const onReset = () => clearChat()
+    window.addEventListener('fyoa:reset-chat', onReset)
+    return () => window.removeEventListener('fyoa:reset-chat', onReset)
+  }, [clearChat])
 
   return (
     <div className="flex flex-col h-full bg-[var(--surface-primary)]">
@@ -29,137 +50,100 @@ const HomePage = () => {
               transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
               className="h-full"
             >
-              <EmptyState onSend={sendMessage} />
+              <EmptyState
+                onSend={sendMessage}
+                loading={loading}
+                mode={mode}
+                onModeChange={setMode}
+              />
             </motion.div>
           ) : (
-            <motion.div
-              key="messages"
-              {...variants.fadeIn}
-              transition={transition.normal}
-              className="py-6 px-4 max-w-3xl mx-auto w-full"
-            >
-              {messages.map((msg, idx) => (
-                <MessageBox
-                  key={msg.messageId}
-                  message={msg}
-                  isLast={idx === messages.length - 1}
+            <>
+              <motion.div
+                key="messages"
+                {...variants.fadeIn}
+                transition={transition.normal}
+                className="py-6 px-4 max-w-3xl mx-auto w-full"
+              >
+                {messages.map((msg, idx) => (
+                  <MessageBox
+                    key={msg.messageId}
+                    message={msg}
+                    isLast={idx === messages.length - 1}
+                    loading={loading}
+                    chatId={chatId}
+                    onSearch={sendMessage}
+                    mode={mode}
+                  />
+                ))}
+                <div ref={messagesEndRef} />
+              </motion.div>
+              
+              {/* Input for active chat at bottom */}
+              <div className="sticky bottom-0 bg-[var(--surface-primary)] border-t border-[var(--border-default)]">
+                <MessageInput
+                  onSend={sendMessage}
                   loading={loading}
-                  chatId={chatId}
-                  onSearch={sendMessage}
+                  mode={mode}
+                  onModeChange={setMode}
                 />
-              ))}
-              <div ref={messagesEndRef} />
-            </motion.div>
+              </div>
+            </>
           )}
         </AnimatePresence>
       </div>
-
-      {/* Input */}
-      <MessageInput
-        onSend={sendMessage}
-        loading={loading}
-        mode={mode}
-        onModeChange={setMode}
-      />
     </div>
   )
 }
 
-function EmptyState({ onSend }: { onSend: (q: string) => void }) {
-  const categories = [
-    {
-      title: 'Research',
-      icon: <Flask size={18} weight="light" />,
-      suggestions: [
-        'How does quantum entanglement work?',
-        'Impact of climate change on biodiversity',
-        'History of the Byzantine Empire'
-      ]
-    },
-    {
-      title: 'Analysis',
-      icon: <ChartLineUp size={18} weight="light" />,
-      suggestions: [
-        'Compare Rust vs Elixir for networking',
-        'Trend analysis of EV market 2024',
-        'Analyze the impact of remote work'
-      ]
-    },
-    {
-      title: 'Discovery',
-      icon: <Compass size={18} weight="light" />,
-      suggestions: [
-        'Latest breakthroughs in fusion energy',
-        'Best hidden gems in Southeast Asia',
-        'Newest open-source LLM releases'
-      ]
-    }
-  ]
-
+function EmptyState({ onSend, loading, mode, onModeChange }: { onSend: (q: string) => void, loading: boolean, mode: SearchMode, onModeChange: (m: SearchMode) => void }) {
   return (
-    <div className="flex flex-col items-center justify-center min-h-full px-4 py-12">
-      <div className="w-full max-w-4xl flex flex-col items-center">
+    <div className="flex flex-col items-center justify-center min-h-full px-4 py-12 md:py-24">
+      <div className="w-full max-w-2xl flex flex-col items-center">
         {/* Shiny Wordmark Reveal */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-          className="text-center mb-12"
+          className="text-center mb-10"
         >
-          <div className="inline-flex items-center gap-2 mb-4 px-3 py-1 border border-[var(--border-accent)] rounded-spine bg-[var(--surface-whisper)]">
-             <div className="w-1.5 h-1.5 rounded-full bg-[var(--border-accent)] animate-pulse" />
-             <span className="text-caption text-[var(--text-accent)] font-semibold tracking-widest uppercase">
-               System Ready
-             </span>
-          </div>
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-semibold tracking-tighter text-[var(--text-primary)] mb-4">
-            Perplexica
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-semibold tracking-tighter text-[var(--text-primary)] mb-6">
+            find your own answer
           </h1>
-          <p className="text-body md:text-lg text-[var(--text-muted)] max-w-md mx-auto">
-            Agentic research engine for precise, cited, and verifiable answers.
-          </p>
+          <VerifiedBadge />
         </motion.div>
 
-        {/* Guided Category Selection — Principle of Least Resistance */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
-          {categories.map((cat, catIdx) => (
-            <motion.div
-              key={cat.title}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 + (catIdx * 0.1), duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-              className="group border border-[var(--border-default)] p-5 rounded-spine hover:border-[var(--border-accent)] hover:bg-[var(--surface-whisper)] transition-all duration-300 flex flex-col h-full"
-            >
-              <div className="flex items-center gap-2 mb-4 text-[var(--text-primary)] group-hover:text-[var(--text-accent)] transition-colors">
-                {cat.icon}
-                <h2 className="text-small font-semibold uppercase tracking-wider">{cat.title}</h2>
-              </div>
-              
-              <div className="flex flex-col gap-2">
-                {cat.suggestions.map(s => (
-                  <button
-                    key={s}
-                    onClick={() => onSend(s)}
-                    className="text-left text-small text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:underline decoration-[var(--border-accent)] decoration-2 underline-offset-4 transition-all"
-                  >
-                    {s}
-                  </button>
-                ))}
-              </div>
-            </motion.div>
-          ))}
-        </div>
-
-        {/* Guidance / Quick Start hint */}
+        {/* Hero Search Box — Centered like a search engine */}
         <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.8, duration: 0.5 }}
-          className="mt-12 flex items-center gap-2 text-caption text-[var(--text-muted)]"
+          initial={{ opacity: 0, scale: 0.98 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.2, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+          className="w-full"
         >
-          <MagnifyingGlass size={14} />
-          <span>One click to start research · Select a suggestion or type your own query</span>
+          <MessageInput
+            onSend={onSend}
+            loading={loading}
+            mode={mode}
+            onModeChange={onModeChange}
+            transparent={true}
+          />
         </motion.div>
+
+        {/* The Chess Task */}
+        {/* Feature Tag: Chess Animation is hidden */}
+        {false && (
+          <div className="mt-12 w-full">
+            <Suspense fallback={<div className="h-64 flex items-center justify-center text-[var(--text-muted)] italic">Loading pieces...</div>}>
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.6, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+              >
+                <ChessBoard />
+              </motion.div>
+            </Suspense>
+          </div>
+        )}
       </div>
     </div>
   )

@@ -1,123 +1,167 @@
 import { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
-import { phoenixGql } from 'src/lib/phoenix'
-import { variants, transition } from 'src/lib/motion'
-import TextAction from 'src/components/ui/TextAction'
+import { motion, AnimatePresence } from 'framer-motion'
+import { navigate, routes } from '@redwoodjs/router'
+import { Flask, ChartLineUp, Compass } from '@phosphor-icons/react'
+import { EASE, DURATION } from 'src/lib/motion'
 
-const PAGE_TITLE = 'Discover — Perplexica'
+/**
+ * Feature flag: the legacy Perplexica-era discover news feed (with
+ * aspect-video skeleton blinks and Brave News thumbnails) is archived
+ * behind this flag. We keep the topic rubric cards as the whole page.
+ * Flip to `true` to re-enable the feed for experimentation.
+ */
+const ENABLE_DISCOVER_FEED = false
 
-const topics = [
-  { key: 'tech', label: 'Tech & Science' },
-  { key: 'finance', label: 'Finance' },
-  { key: 'art', label: 'Art & Culture' },
-  { key: 'sports', label: 'Sports' },
-  { key: 'entertainment', label: 'Entertainment' },
+const PAGE_TITLE = 'Discover — FYOA'
+
+const rubrics = [
+  {
+    key: 'research',
+    label: 'Research',
+    icon: <Flask size={18} weight="light" />,
+    suggestions: [
+      'How does quantum entanglement work?',
+      'Impact of climate change on biodiversity',
+      'History of the Byzantine Empire',
+      'How do mRNA vaccines train the immune system?',
+      'What caused the 2008 financial crisis?',
+      'Origins of the Silk Road and its legacy',
+      'How does CRISPR gene editing work?',
+      'The science behind dark matter and dark energy',
+    ],
+  },
+  {
+    key: 'analysis',
+    label: 'Analysis',
+    icon: <ChartLineUp size={18} weight="light" />,
+    suggestions: [
+      'Compare Rust vs Elixir for networked services',
+      'Trend analysis of the EV market 2024',
+      'Analyze the long-term impact of remote work',
+      'Is nuclear energy a realistic climate solution?',
+      'Compare monolith vs microservices at scale',
+      'Why did Japan’s Lost Decade happen?',
+      'Does universal basic income actually work?',
+      'Pros and cons of index funds vs active funds',
+    ],
+  },
+  {
+    key: 'discovery',
+    label: 'Discovery',
+    icon: <Compass size={18} weight="light" />,
+    suggestions: [
+      'Latest breakthroughs in fusion energy',
+      'Best hidden gems in Southeast Asia',
+      'Newest open-source LLM releases',
+      'Underrated cities for remote work in 2025',
+      'Most exciting startups in biotech right now',
+      'New tools shipping in the Rust ecosystem',
+      'Best long-form podcasts about systems thinking',
+      'Indie games with unique art direction',
+    ],
+  },
 ]
 
-interface Article {
-  title: string
-  content: string
-  url: string
-  thumbnail: string
-}
-
 const DiscoverPage = () => {
-  const [topic, setTopic] = useState('tech')
-  const [articles, setArticles] = useState<Article[]>([])
-  const [loading, setLoading] = useState(true)
+  const [activeKey, setActiveKey] = useState('research')
+
+  const activeRubric = rubrics.find(r => r.key === activeKey) || rubrics[0]
 
   useEffect(() => { document.title = PAGE_TITLE }, [])
 
-  useEffect(() => {
-    setLoading(true)
-    phoenixGql(`{
-      discover(topic: ${JSON.stringify(topic)}) {
-        title content url thumbnail
-      }
-    }`).then(res => {
-      setArticles(res.data.discover || [])
-      setLoading(false)
-    }).catch(() => setLoading(false))
-  }, [topic])
+  const onSuggestionClick = (query: string) => {
+    navigate(routes.home({ q: query }))
+  }
 
   return (
-    <div className="flex-1 overflow-y-auto p-6 pb-20 lg:pb-6">
+    <div className="flex-1 overflow-y-auto p-4 md:p-6 pb-20 lg:pb-6 bg-[var(--surface-primary)]">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-h1 tracking-tight text-[var(--text-primary)] mb-6">Discover</h1>
+        <h1 className="text-4xl md:text-5xl font-semibold tracking-tighter text-[var(--text-primary)] mb-8">
+          Discover
+        </h1>
 
-        {/* Topic selector — TextAction row with accent underline */}
-        <div className="flex gap-6 mb-6 border-b border-[var(--border-default)] overflow-x-auto">
-          {topics.map(t => (
-            <TextAction
-              key={t.key}
-              onClick={() => setTopic(t.key)}
-              label={t.label}
-              active={topic === t.key}
-              className={`pb-2.5 whitespace-nowrap min-h-[44px] ${
-                topic === t.key
-                  ? 'border-b-2 border-[var(--border-accent)]'
-                  : ''
-              }`}
-            />
+        {/* Topic tabs — layoutId makes the underline slide between active tabs */}
+        <div
+          role="tablist"
+          className="flex gap-6 mb-8 border-b border-[var(--border-default)] overflow-x-auto no-scrollbar"
+        >
+          {rubrics.map(r => (
+            <button
+              key={r.key}
+              type="button"
+              role="tab"
+              aria-selected={activeKey === r.key}
+              onClick={() => setActiveKey(r.key)}
+              className={`relative pb-2.5 whitespace-nowrap min-h-[44px] text-small font-medium
+                transition-colors duration-[180ms]
+                ${activeKey === r.key
+                  ? 'text-[var(--text-accent)] font-semibold'
+                  : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+                }`}
+            >
+              {r.label}
+              {activeKey === r.key && (
+                <motion.span
+                  layoutId="topic-line"
+                  className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--border-accent)]"
+                  transition={{ duration: DURATION.fast, ease: EASE.out }}
+                />
+              )}
+            </button>
           ))}
         </div>
 
-        {/* Loading */}
-        {loading && (
-          <div className="flex items-center justify-center py-20">
-            <div className="w-5 h-5 border-2 border-[var(--border-muted)] border-t-[var(--border-accent)] rounded-full animate-spin" />
-          </div>
-        )}
+        <div className="flex flex-col gap-8">
+          {/* Rubric card — 100ms blink on switch, suggestions stagger in at 40ms each */}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeKey}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: DURATION.instant, ease: EASE.out }}
+              className="border border-[var(--border-default)] p-6 rounded-spine bg-[var(--surface-whisper)]"
+            >
+              <div className="flex items-center gap-2 mb-6 text-[var(--text-accent)]">
+                {activeRubric.icon}
+                <h2 className="text-small font-semibold uppercase tracking-wider">
+                  {activeRubric.label}
+                </h2>
+              </div>
 
-        {/* Articles grid */}
-        {!loading && articles.length > 0 && (
-          <motion.div
-            variants={variants.stagger}
-            initial="initial"
-            animate="animate"
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-3"
-          >
-            {articles.map((article, idx) => (
-              <motion.div key={idx} variants={variants.slideUp} transition={transition.normal}>
-                <a
-                  href={article.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block border border-[var(--border-default)] border-l-[3px] border-l-[var(--border-accent)] rounded-spine
-                    hover:bg-[var(--surface-whisper)] transition-colors duration-[180ms] overflow-hidden group"
-                >
-                  {article.thumbnail && (
-                    <div className="aspect-video overflow-hidden border-b border-[var(--border-default)]">
-                      <img
-                        src={article.thumbnail}
-                        alt=""
-                        className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-[250ms]"
-                        loading="lazy"
-                      />
-                    </div>
-                  )}
-                  <div className="p-4">
-                    <h3 className="text-small font-semibold leading-tight line-clamp-2 text-[var(--text-primary)] mb-1 group-hover:text-[var(--text-accent)] transition-colors duration-[180ms]">
-                      {article.title}
-                    </h3>
-                    <p className="text-small text-[var(--text-muted)] line-clamp-2">
-                      {article.content}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {activeRubric.suggestions.map((s, i) => (
+                  <motion.button
+                    key={s}
+                    type="button"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.07, delay: 0.05 + i * 0.04, ease: EASE.out }}
+                    onClick={() => onSuggestionClick(s)}
+                    className="text-left p-3 rounded-spine border border-transparent
+                      hover:border-[var(--border-default)] hover:bg-[var(--surface-primary)]
+                      transition-all group"
+                  >
+                    <p className="text-body text-[var(--text-primary)] opacity-80 group-hover:opacity-100 transition-opacity leading-snug">
+                      {s}
                     </p>
-                    {article.url && (
-                      <span className="text-caption text-[var(--text-muted)] mt-2 block normal-case tracking-normal">
-                        {new URL(article.url).hostname.replace('www.', '')}
-                      </span>
-                    )}
-                  </div>
-                </a>
-              </motion.div>
-            ))}
-          </motion.div>
-        )}
+                  </motion.button>
+                ))}
+              </div>
+            </motion.div>
+          </AnimatePresence>
 
-        {!loading && articles.length === 0 && (
-          <p className="text-center text-[var(--text-muted)] text-small py-12">No articles found for this topic.</p>
-        )}
+          {/*
+           * The legacy Perplexica news feed (Brave News thumbnails +
+           * skeleton blinks) is archived behind ENABLE_DISCOVER_FEED.
+           * Topic rubrics above are the entire Discover surface now.
+           */}
+          {ENABLE_DISCOVER_FEED && (
+            <div className="text-caption text-[var(--text-muted)]">
+              Discover feed archived — set <code>ENABLE_DISCOVER_FEED</code> to true in <code>DiscoverPage.tsx</code> to re-enable.
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )

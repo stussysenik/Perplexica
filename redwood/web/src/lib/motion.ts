@@ -78,13 +78,6 @@ export const variants = {
     },
   },
 
-  // Color spine reveal — for SpineCard left border
-  colorSpineReveal: {
-    initial: { borderLeftWidth: 0 },
-    animate: { borderLeftWidth: 3 },
-    transition: { duration: DURATION.fast, ease: EASE.out },
-  },
-
   // Scale in — for badges, icons
   scaleIn: {
     initial: { opacity: 0, scale: 0.9 },

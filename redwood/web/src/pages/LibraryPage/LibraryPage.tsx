@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
+import { navigate } from '@redwoodjs/router'
 import { phoenixGql } from 'src/lib/phoenix'
-import { renderMarkdown } from 'src/lib/renderMarkdown'
 import { variants, transition } from 'src/lib/motion'
-import type { Source } from 'src/lib/useSearch'
-import Sources from 'src/components/Sources/Sources'
+import type { Source, Message } from 'src/lib/useSearch'
+import MessageBox from 'src/components/Chat/MessageBox'
 import TextAction from 'src/components/ui/TextAction'
 import { ArrowLeft } from '@phosphor-icons/react'
 
@@ -39,7 +39,7 @@ const LibraryPage = () => {
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([])
   const [loadingBookmarks, setLoadingBookmarks] = useState(false)
 
-  useEffect(() => { document.title = 'Library — Perplexica' }, [])
+  useEffect(() => { document.title = 'Library — FYOA' }, [])
 
   const fetchChats = () => {
     setLoading(true)
@@ -93,8 +93,67 @@ const LibraryPage = () => {
     return `${Math.floor(hrs / 24)}d ago`
   }
 
-  // Chat detail view
+  // Live refresh for in-flight messages. If any message in the currently
+  // open chat is still `answering`, poll `messages(chatId)` every 2s until
+  // the last one flips to completed/error. This is what lets you navigate
+  // away from the chat mid-search and come back to a live progress view —
+  // the backend pipeline keeps running, we just re-read its checkpoint.
+  const hasInFlight = messages.some(m => m.status === 'answering')
+
+  useEffect(() => {
+    if (!selectedChat || !hasInFlight) return
+    let cancelled = false
+
+    const tick = async () => {
+      if (cancelled) return
+      try {
+        const res = await phoenixGql(`{
+          messages(chatId: ${JSON.stringify(selectedChat)}) {
+            messageId query status responseBlocks
+          }
+        }`)
+        if (cancelled) return
+        setMessages(res.data.messages || [])
+      } catch {
+        // swallow transient errors; next tick will retry
+      }
+    }
+
+    tick() // fire immediately so reopening a mid-flight chat shows state on the first frame, not 2s later
+    const id = setInterval(tick, 2000)
+    return () => { cancelled = true; clearInterval(id) }
+  }, [selectedChat, hasInFlight])
+
+  // Chat detail view — reuse MessageBox so the action bar (copy, share,
+  // bookmark, export, listen) and footnote-click-to-scroll behaviour come
+  // for free and stay 1:1 with the live chat view.
   if (selectedChat) {
+    const toMessage = (m: StoredMessage): Message => {
+      const blocks = m.responseBlocks || []
+      const sourceBlock = blocks.find((b: any) => b.type === 'source')
+      const textBlock = blocks.find((b: any) => b.type === 'text')
+      const status = (m.status as Message['status']) || 'completed'
+      return {
+        id: m.messageId,
+        messageId: m.messageId,
+        query: m.query,
+        status,
+        sources: (sourceBlock?.data as Source[]) || [],
+        answer: (textBlock?.data as string) || '',
+        phase:
+          status === 'completed' ? 'complete'
+          : status === 'error' ? 'error'
+          : 'classifying',
+        sourceCount: (sourceBlock?.data as Source[])?.length || 0,
+      }
+    }
+
+    const handleSearch = (query: string) => {
+      // Clicking a topic-link inside a rendered answer should start a fresh
+      // search — send the user to the home route with the query preloaded.
+      navigate(`/?q=${encodeURIComponent(query)}`)
+    }
+
     return (
       <div className="flex-1 overflow-y-auto p-6 pb-20 lg:pb-6">
         <div className="max-w-3xl mx-auto">
@@ -110,39 +169,18 @@ const LibraryPage = () => {
               <div className="w-5 h-5 border-2 border-[var(--border-muted)] border-t-[var(--border-accent)] rounded-full animate-spin" />
             </div>
           ) : (
-            messages.map(msg => {
-              const blocks = msg.responseBlocks || []
-              const sourceBlock = blocks.find((b: any) => b.type === 'source')
-              const textBlock = blocks.find((b: any) => b.type === 'text')
-              const sources: Source[] = sourceBlock?.data || []
-
+            messages.map(m => {
+              const msg = toMessage(m)
+              const inFlight = msg.status === 'answering'
               return (
-                <div key={msg.messageId} className="mb-10">
-                  <h2 className="text-h1 tracking-tight text-[var(--text-primary)] mb-4">{msg.query}</h2>
-
-                  {sources.length > 0 && (
-                    <div className="mb-4">
-                      <Sources sources={sources} />
-                    </div>
-                  )}
-
-                  {textBlock?.data && (
-                    <div
-                      className="prose prose-gray dark:prose-invert max-w-none
-                        prose-headings:tracking-tight
-                        prose-p:text-body prose-p:leading-relaxed prose-p:[text-wrap:pretty]
-                        prose-a:text-[var(--text-accent)] prose-a:no-underline hover:prose-a:underline
-                        prose-code:text-small prose-code:bg-[var(--surface-secondary)] prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded-[2px]"
-                      dangerouslySetInnerHTML={{ __html: renderMarkdown(textBlock.data) }}
-                    />
-                  )}
-
-                  {msg.status === 'error' && (
-                    <div className="p-4 border border-red-200 dark:border-red-800 border-l-[3px] border-l-red-500 rounded-spine text-small text-red-700 dark:text-red-300">
-                      This search encountered an error.
-                    </div>
-                  )}
-                </div>
+                <MessageBox
+                  key={m.messageId}
+                  message={msg}
+                  isLast={inFlight}
+                  loading={inFlight}
+                  chatId={selectedChat}
+                  onSearch={handleSearch}
+                />
               )
             })
           )}
@@ -203,15 +241,16 @@ const LibraryPage = () => {
                 variants={variants.stagger}
                 initial="initial"
                 animate="animate"
-                className="space-y-2"
+                className="border-t border-[var(--border-default)]"
               >
                 {chats.map(chat => (
                   <motion.div key={chat.id} variants={variants.slideUp} transition={transition.normal}>
                     <div
                       onClick={() => openChat(chat.id)}
-                      className="flex items-center gap-3 p-4
-                        border border-[var(--border-default)] border-l-[3px] border-l-[var(--border-accent)]
-                        rounded-spine hover:bg-[var(--surface-whisper)]
+                      className="flex items-center gap-4 py-4 pl-5 pr-4
+                        border-b border-[var(--border-default)]
+                        border-l-[4px] border-l-[var(--border-accent)]
+                        hover:bg-[var(--surface-whisper)]
                         transition-colors duration-[180ms] cursor-pointer group"
                     >
                       <div className="flex-1 min-w-0">

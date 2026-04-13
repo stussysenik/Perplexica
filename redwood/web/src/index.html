@@ -4,20 +4,64 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>Perplexica — Research-grade search</title>
-  <meta name="description" content="AI-powered search with source traceability. Research-grade answers backed by real sources." />
+  <title>FYOA — Find Your Own Answer</title>
+  <meta name="description" content="Find your own answer. Research-grade AI search with traceable sources and verified citations." />
   <link rel="icon" type="image/png" href="/favicon.png" />
+
+  <!-- PWA manifest -->
+  <link rel="manifest" href="/manifest.json" />
+
+  <!-- Theme color — tracks light/dark OS preference -->
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#0a0a0a" media="(prefers-color-scheme: dark)" />
+
+  <!-- iOS home-screen / standalone mode -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="FYOA" />
+
+  <!-- Android Chrome -->
+  <meta name="mobile-web-app-capable" content="yes" />
+
   <!-- Preconnect to Google Fonts to eliminate critical path latency -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+  <!--
+    Pre-hydration theme bootstrap. Reads the persisted preference and applies
+    the `dark` class + `data-theme` attribute synchronously, before the first
+    paint. Default is light — never flashes dark on cold loads. Kept inline &
+    minimal so it blocks paint for <1ms.
+  -->
+  <script>
+    (function () {
+      try {
+        var raw = localStorage.getItem('perplexica.settings.v1');
+        var pref = 'light';
+        if (raw) {
+          var parsed = JSON.parse(raw);
+          if (parsed && (parsed.theme === 'dark' || parsed.theme === 'light' || parsed.theme === 'system')) {
+            pref = parsed.theme;
+          }
+        }
+        var resolved = pref;
+        if (pref === 'system') {
+          resolved = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+        var root = document.documentElement;
+        if (resolved === 'dark') root.classList.add('dark');
+        root.setAttribute('data-theme', resolved);
+      } catch (_) {
+        document.documentElement.setAttribute('data-theme', 'light');
+      }
+    })();
+  </script>
 </head>
 
 <body>
   <script>
-    // Set Phoenix API URL for remote/tunnel access (override in .env or remove for localhost)
-    if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-      window.__PHOENIX_URL__ = 'https://organizations-commit-fiber-huntington.trycloudflare.com';
-    }
+    // Set Phoenix API URL for remote/tunnel access (override in .env or remove for relative paths)
+    // window.__PHOENIX_URL__ = 'https://your-backend.url';
   </script>
   <!-- Please keep this div empty -->
   <div id="redwood-app"></div>
