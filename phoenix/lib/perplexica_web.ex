@@ -17,7 +17,20 @@ defmodule PerplexicaWeb do
   those modules here.
   """
 
-  def static_paths, do: ~w(assets fonts images favicon.ico robots.txt index.html manifest.json sw.js icon-180.png icon-192.png icon-512.png)
+  # "index.html" is intentionally NOT in this list. In dev the SPA shell
+  # lives on the Redwood dev server (`:8910`) and Phoenix redirects there via
+  # `PageController.index`. In prod the Redwood build writes its `index.html`
+  # into `priv/static/` and `PageController.index` serves it with
+  # `send_file/3` — Plug.Static does not need to handle it either way.
+  #
+  # PWA artifacts (`sw.js`, `manifest.json`, `icon-*.png`) were removed by
+  # the `kill-stale-pwa-service-worker` change — the retired smoke-test UI
+  # registered a buggy service worker that survived in every browser that
+  # had ever loaded it. The kill-switch replacement lives at
+  # `redwood/web/public/sw.js`, and Phoenix no longer serves any PWA
+  # surface. See openspec/changes/kill-stale-pwa-service-worker/ for the
+  # full history so nobody reintroduces these paths without a PWA spec.
+  def static_paths, do: ~w(assets fonts images favicon.ico robots.txt)
 
   def router do
     quote do

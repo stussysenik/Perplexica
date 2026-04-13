@@ -36,11 +36,41 @@ free_port() {
 free_port 4000
 free_port 8910
 
-# Load env vars (local overrides take precedence)
+# Load env vars. The authoritative file is `.env.local` at the repo root —
+# it holds GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET, GITHUB_ALLOWLIST, plus
+# every API key both Phoenix and Redwood read at runtime. `phoenix/.env.local`
+# is a historical subset kept around for backwards-compat; if it exists we
+# also source it, but the root file wins because it's loaded first and any
+# overlapping keys get re-exported by the phoenix file.
+if [[ -f "$ROOT/.env.local" ]]; then
+  set -a
+  # shellcheck disable=SC1091
+  source "$ROOT/.env.local"
+  set +a
+else
+  echo -e "${RED}[dev]${NC} Missing $ROOT/.env.local"
+  echo -e "${RED}[dev]${NC} Phoenix needs GITHUB_CLIENT_ID / GITHUB_CLIENT_SECRET / GITHUB_ALLOWLIST to boot."
+  exit 1
+fi
+
 if [[ -f "$ROOT/phoenix/.env.local" ]]; then
   set -a
+  # shellcheck disable=SC1091
   source "$ROOT/phoenix/.env.local"
   set +a
+fi
+
+# Fail fast with an actionable message BEFORE Phoenix crashes on its own
+# (runtime.exs:36 raises, but the script should surface the gap first so
+# the user doesn't have to read a Phoenix traceback to understand).
+if [[ -z "${GITHUB_CLIENT_ID:-}" || -z "${GITHUB_CLIENT_SECRET:-}" ]]; then
+  echo -e "${RED}[dev]${NC} GITHUB_CLIENT_ID / GITHUB_CLIENT_SECRET still empty after sourcing envs."
+  echo -e "${RED}[dev]${NC} Check $ROOT/.env.local — make sure both are set and uncommented."
+  exit 1
+fi
+
+if [[ -z "${GITHUB_ALLOWLIST:-}" ]]; then
+  echo -e "${YELLOW}[dev]${NC} GITHUB_ALLOWLIST is empty — OAuth will come back as forbidden for every user."
 fi
 
 echo -e "${CYAN}[phoenix]${NC} Starting on :4000"
