@@ -69,6 +69,27 @@ defmodule PerplexicaWeb.Schema do
     field :mode_configs, list_of(non_null(:mode_config)) do
       resolve &PerplexicaWeb.Resolvers.ModeConfigResolver.list/3
     end
+
+    # ── Library tabs ────────────────────────────────────────────
+    # Chat-level lists that back the Library Bookmarks / Archive /
+    # Trash tabs. The default `chats` query above already excludes
+    # archived and trashed rows so the main Chats tab can keep using
+    # it unchanged.
+
+    @desc "List bookmarked chats, most recently bookmarked first"
+    field :bookmarked_chats, list_of(:chat) do
+      resolve &PerplexicaWeb.Resolvers.LibraryResolver.list_bookmarked/3
+    end
+
+    @desc "List archived chats (not trashed), most recently archived first"
+    field :archived_chats, list_of(:chat) do
+      resolve &PerplexicaWeb.Resolvers.LibraryResolver.list_archived/3
+    end
+
+    @desc "List trashed chats with a 30-day purge countdown, newest first"
+    field :trashed_chats, list_of(:chat) do
+      resolve &PerplexicaWeb.Resolvers.LibraryResolver.list_trashed/3
+    end
   end
 
   mutation do
@@ -114,6 +135,42 @@ defmodule PerplexicaWeb.Schema do
     field :reset_mode_config, :mode_config do
       arg :mode, non_null(:string)
       resolve &PerplexicaWeb.Resolvers.ModeConfigResolver.reset/3
+    end
+
+    # ── Chat lifecycle ──────────────────────────────────────────
+    # Chat-level bookmark / archive / soft-delete / restore / purge
+    # mutations. Soft-delete (trash) is the default user-facing action
+    # with a 30-day grace window; `purge_chat` is a hard delete reserved
+    # for the Trash tab confirm dialog and the background Purger.
+
+    @desc "Toggle the bookmark state of a chat (set or clear bookmarked_at)"
+    field :toggle_chat_bookmark, :chat do
+      arg :id, non_null(:id)
+      resolve &PerplexicaWeb.Resolvers.LibraryResolver.toggle_chat_bookmark/3
+    end
+
+    @desc "Archive a chat (hides it from the default Chats list)"
+    field :archive_chat, :chat do
+      arg :id, non_null(:id)
+      resolve &PerplexicaWeb.Resolvers.LibraryResolver.archive_chat/3
+    end
+
+    @desc "Restore a chat from archive and/or trash (clears both timestamps)"
+    field :restore_chat, :chat do
+      arg :id, non_null(:id)
+      resolve &PerplexicaWeb.Resolvers.LibraryResolver.restore_chat/3
+    end
+
+    @desc "Move a chat to the trash (soft-delete, purged after 30 days)"
+    field :trash_chat, :chat do
+      arg :id, non_null(:id)
+      resolve &PerplexicaWeb.Resolvers.LibraryResolver.trash_chat/3
+    end
+
+    @desc "Hard-delete a chat. Irreversible — only exposed from the Trash tab."
+    field :purge_chat, :delete_result do
+      arg :id, non_null(:id)
+      resolve &PerplexicaWeb.Resolvers.LibraryResolver.purge_chat/3
     end
   end
 

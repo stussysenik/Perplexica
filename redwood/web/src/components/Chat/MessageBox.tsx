@@ -88,14 +88,22 @@ const MessageBox = ({ message, isLast, loading, chatId, onSearch, mode }: Props)
         {message.query}
       </h2>
 
-      {/* Search progress — real-time staged indicators */}
-      {isSearching && isLast && (
+      {/* Search progress — real-time staged indicators. Also renders the
+          failure card when `phase === 'error'`, so errored messages show
+          "Failed in <stage> after <Xs>" with the raw pipeline message. */}
+      {(isSearching || isError) && isLast && (
         <SearchProgress
           phase={message.phase || 'classifying'}
           sourceCount={message.sourceCount || 0}
           subSteps={message.subSteps}
           startedAt={message.startedAt}
           mode={mode}
+          subStepArrivals={message.subStepArrivals}
+          currentStep={message.currentStep}
+          currentStepElapsedMs={message.currentStepElapsedMs}
+          failingStep={message.failingStep}
+          failingElapsedMs={message.failingElapsedMs}
+          errorMessage={isError ? message.answer : undefined}
         />
       )}
 

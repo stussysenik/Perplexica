@@ -17,7 +17,13 @@ interface AppProps {
 
 const App = ({ children }: AppProps) => (
   <FatalErrorBoundary page={FatalErrorPage}>
-    <RedwoodProvider titleTemplate="%PageTitle | FYOA">
+    {/*
+      Every browser tab reads "Find Your Own Answer" — the product voice is
+      the title, per-page suffixes would feel like admin furniture. Pages
+      that used to call `document.title = '… — FYOA'` have had those lines
+      removed so they can't fight this template back to per-page strings.
+    */}
+    <RedwoodProvider titleTemplate="Find Your Own Answer">
       <RedwoodApolloProvider
         graphQLClientConfig={{
           httpLinkConfig: { credentials: 'include' },

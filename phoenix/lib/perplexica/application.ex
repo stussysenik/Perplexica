@@ -18,6 +18,10 @@ defmodule Perplexica.Application do
       Perplexica.Models.Registry,
       # Search session supervisor (DynamicSupervisor)
       Perplexica.Search.Supervisor,
+      # Library trash purger — daily tick that hard-deletes chats that
+      # have been in Trash for more than 30 days. Must start after the
+      # Repo so the first tick can run queries immediately.
+      Perplexica.Library.Purger,
       # Start to serve requests, typically the last entry
       PerplexicaWeb.Endpoint,
       # Absinthe subscription supervisor — must start AFTER the endpoint so

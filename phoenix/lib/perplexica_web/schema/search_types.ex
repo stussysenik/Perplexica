@@ -28,6 +28,24 @@ defmodule PerplexicaWeb.Schema.SearchTypes do
     field :block_id, :string
     field :patch, :json
     field :data, :string
+
+    # ── Instrumentation ─────────────────────────────────────
+    # Wall-clock ms at the moment the pipeline emitted this event.
+    # The frontend uses it to plot a live timeline and to compute a
+    # per-event latency independent of the client's own clock drift.
+    field :emitted_at_ms, :float
+
+    # Which pipeline stage is running (classifier | researcher |
+    # stream_answer | etc). Non-nil on every emitted event so the
+    # frontend always knows where the user is waiting. Nil for events
+    # that belong to no particular stage.
+    field :step, :string
+
+    # Milliseconds elapsed in `step` at the moment of emission. On
+    # `{:error, ...}` events this is the measured time the failing
+    # stage had been running — this is what lets the UI show
+    # "Failed in classifier after 4.2s".
+    field :elapsed_ms, :float
   end
 
   object :discover_article do

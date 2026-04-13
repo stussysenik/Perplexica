@@ -29,6 +29,12 @@ export interface SearchEvent {
   blockId?: string
   patch?: Record<string, any>[]
   data?: string
+  /** Wall-clock ms when Phoenix emitted the event. Added in Slice 4. */
+  emittedAtMs?: number
+  /** Pipeline stage (`classifier` | `researcher` | `answer` | …) for the event. */
+  step?: string | null
+  /** Milliseconds elapsed in `step` at emission time. */
+  elapsedMs?: number | null
 }
 
 interface SubscriptionCallbacks {
@@ -48,6 +54,7 @@ export function subscribeToSearch(
       subscription SearchUpdated($sessionId: ID!) {
         searchUpdated(sessionId: $sessionId) {
           type block blockId patch data
+          emittedAtMs step elapsedMs
         }
       }
     `,

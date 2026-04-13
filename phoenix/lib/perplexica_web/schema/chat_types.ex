@@ -10,6 +10,17 @@ defmodule PerplexicaWeb.Schema.ChatTypes do
     field :files, :json
     field :created_at, :string
     field :messages, list_of(:message)
+
+    # Lifecycle timestamps — nullable. Non-nil means the chat is in that
+    # state. The UI uses these to pick the right tab/row treatment and
+    # to render "bookmarked Xd ago", "purges in Nd", etc.
+    field :bookmarked_at, :string
+    field :archived_at, :string
+    field :trashed_at, :string
+
+    # `trashed_at + 30 days` — when the Purger will hard-delete this row.
+    # Only non-nil for trashed chats.
+    field :purges_at, :string
   end
 
   object :message do

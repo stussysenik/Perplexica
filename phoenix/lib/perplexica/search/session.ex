@@ -29,6 +29,12 @@ defmodule Perplexica.Search.Session do
 
   @ttl_ms 30 * 60 * 1_000
 
+  # Wall-clock helper — single source of truth so every event carries
+  # a consistent `emitted_at_ms` regardless of which pipeline stage
+  # produced it. Using :millisecond (not :microsecond) keeps the number
+  # small enough to fit in a JS Number without precision loss.
+  defp now_ms, do: System.system_time(:millisecond)
+
   # ── Public API ─────────────────────────────────────────────────────
 
   def start_link(opts) do
@@ -85,10 +91,20 @@ defmodule Perplexica.Search.Session do
     task_state = state
 
     Task.start(fn ->
+      # `stage_ref` is a pid-owned Process.dict slot that every `publish/2`
+      # reads when enriching events. We set it from each pipeline stage so
+      # failures and progress events automatically carry the correct
+      # step name and elapsed_ms without having to thread them through
+      # every emit_fn / publish call.
+      Process.put(:current_stage, nil)
+      Process.put(:current_stage_started_at, now_ms())
+
       try do
         run_search_pipeline(task_state)
       rescue
         e ->
+          # Attribute the crash to whichever stage was running at the
+          # time — read from the process dict that each stage updates.
           Logger.error("[SearchSession] Pipeline crashed: #{inspect(e)}")
           publish(task_state.session_id, {:error, Exception.message(e)})
           update_message_status(task_state, "error")
@@ -107,13 +123,40 @@ defmodule Perplexica.Search.Session do
   @impl true
   def handle_info(_msg, state), do: {:noreply, state}
 
+  # ── Stage tracking ─────────────────────────────────────────
+  #
+  # `with_stage/2` is the one place where pipeline stages advertise what
+  # they're doing to the frontend. It sets the process-dict markers that
+  # `publish/2` reads to enrich every event with `step` + `elapsed_ms`,
+  # then runs the supplied function. The markers survive a crash via the
+  # outer rescue — the rescue reads them to attribute the failure to the
+  # right stage before publishing `{:error, ...}`.
+
+  defp with_stage(name, fun) when is_function(fun, 0) do
+    prev_name = Process.get(:current_stage)
+    prev_at = Process.get(:current_stage_started_at)
+    Process.put(:current_stage, name)
+    Process.put(:current_stage_started_at, now_ms())
+
+    try do
+      fun.()
+    after
+      Process.put(:current_stage, prev_name)
+      Process.put(:current_stage_started_at, prev_at)
+    end
+  end
+
   # ── Search Pipeline ────────────────────────────────────────────────
 
   defp run_search_pipeline(state) do
     session_id = state.session_id
 
-    # 1. Classify the query
-    {:ok, classification} = Classifier.classify(state.query, state.chat_history, state.config)
+    # 1. Classify the query — wrapped in `with_stage` so a crash here
+    # gets attributed to "classifier" in the error event.
+    {:ok, classification} =
+      with_stage("classifier", fn ->
+        Classifier.classify(state.query, state.chat_history, state.config)
+      end)
 
     # 2. Emit research block (empty, will be updated with substeps)
     research_block_id = emit_block(session_id, %{
@@ -126,7 +169,7 @@ defmodule Perplexica.Search.Session do
     if classification.skip_search do
       # Skip research, go straight to answer
       publish(session_id, :research_complete)
-      stream_answer(state, [], classification)
+      with_stage("answer", fn -> stream_answer(state, [], classification) end)
     else
       # 3. Run research loop
       emit_fn = fn event, data ->
@@ -157,11 +200,14 @@ defmodule Perplexica.Search.Session do
         end
       end
 
-      {:ok, search_results} = Researcher.research(
-        classification.standalone_follow_up,
-        state.config,
-        emit_fn
-      )
+      {:ok, search_results} =
+        with_stage("researcher", fn ->
+          Researcher.research(
+            classification.standalone_follow_up,
+            state.config,
+            emit_fn
+          )
+        end)
 
       # 4. Emit source block
       if search_results != [] do
@@ -178,7 +224,9 @@ defmodule Perplexica.Search.Session do
       publish(session_id, :research_complete)
 
       # 5. Stream final answer
-      stream_answer(state, search_results, classification)
+      with_stage("answer", fn ->
+        stream_answer(state, search_results, classification)
+      end)
     end
   end
 
@@ -278,7 +326,24 @@ defmodule Perplexica.Search.Session do
   # `:search_event` object type (type, block, block_id, patch, data).
 
   defp publish(session_id, event) do
-    root = event_to_root(event)
+    # Every event is decorated with `emitted_at_ms`, `step`, and
+    # `elapsed_ms` so the frontend can render a real timeline and
+    # attribute failures to the stage that was running. The helpers
+    # read from the pipeline's `with_stage/2` markers in the process
+    # dict — so a `publish/2` call site never has to pass these
+    # fields explicitly.
+    root =
+      event
+      |> event_to_root()
+      |> Map.merge(%{
+        emitted_at_ms: now_ms() * 1.0,
+        step: Process.get(:current_stage),
+        elapsed_ms:
+          case Process.get(:current_stage_started_at) do
+            nil -> nil
+            at when is_integer(at) -> (now_ms() - at) * 1.0
+          end
+      })
 
     Absinthe.Subscription.publish(
       PerplexicaWeb.Endpoint,

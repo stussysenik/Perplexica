@@ -52,6 +52,13 @@ config :perplexica, PerplexicaWeb.Endpoint,
 # Enable dev routes for dashboard and mailbox
 config :perplexica, dev_routes: true
 
+# In dev the Redwood app runs on its own port with HMR. Phoenix serves the
+# API on :4000 and any HTML request (including the OAuth callback landing)
+# gets bounced to the Redwood dev server so the user always ends up on the
+# real UI. Leave this unset in prod — `PageController.index` falls back to
+# serving the compiled Redwood build from `priv/static/index.html`.
+config :perplexica, :frontend_url, "http://localhost:8910"
+
 # Do not include metadata nor timestamps in development logs
 config :logger, :default_formatter, format: "[$level] $message\n"
 

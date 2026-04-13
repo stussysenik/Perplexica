@@ -2,15 +2,14 @@ defmodule PerplexicaWeb.Resolvers.ChatResolver do
   @moduledoc "GraphQL resolvers for chat/message operations."
 
   import Ecto.Query
-  alias Perplexica.{Repo, Chat, Message}
+  alias Perplexica.{Repo, Chat, Message, Library}
 
   def list_chats(_parent, _args, _context) do
-    chats =
-      Chat
-      |> order_by(desc: :inserted_at)
-      |> Repo.all()
-      |> Enum.map(&format_chat/1)
-
+    # Delegate to the Library context so the archive/trash filter rules
+    # stay in one place. This returns only active chats (archived and
+    # trashed rows are filtered out) — the Library tabs query them via
+    # dedicated resolvers.
+    chats = Library.list_chats() |> Enum.map(&format_chat/1)
     {:ok, chats}
   end
 
@@ -55,7 +54,15 @@ defmodule PerplexicaWeb.Resolvers.ChatResolver do
       title: chat.title,
       sources: chat.sources,
       files: chat.files,
-      created_at: to_string(chat.inserted_at)
+      created_at: to_string(chat.inserted_at),
+      bookmarked_at: chat.bookmarked_at && to_string(chat.bookmarked_at),
+      archived_at: chat.archived_at && to_string(chat.archived_at),
+      trashed_at: chat.trashed_at && to_string(chat.trashed_at),
+      purges_at:
+        case Library.purges_at(chat) do
+          nil -> nil
+          dt -> to_string(dt)
+        end
     }
   end
 

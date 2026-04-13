@@ -32,6 +32,23 @@ interface Props {
   subSteps?: SearchSubStep[]
   startedAt?: number
   mode?: SearchMode
+  /**
+   * Wall-clock ms when each substep first arrived, keyed by
+   * `${type}:${hash(data)}`. Used to render per-step elapsed ("Reading
+   * reuters.com · 2.4s") so the user sees what the pipeline is actually
+   * waiting on in real time, not just a rotating ticker.
+   */
+  subStepArrivals?: Record<string, number>
+  /** Name of the current Phoenix pipeline stage ("classifier" / "researcher" / "answer"). */
+  currentStep?: string | null
+  /** ms the current stage has been running, per the latest event. */
+  currentStepElapsedMs?: number | null
+  /** For error phase: name of the stage that failed. */
+  failingStep?: string | null
+  /** For error phase: ms elapsed in the failing stage when it threw. */
+  failingElapsedMs?: number | null
+  /** For error phase: the raw error message from the pipeline. */
+  errorMessage?: string
 }
 
 const phaseOrder: SearchPhase[] = ['classifying', 'searching', 'analyzing', 'writing']
@@ -77,12 +94,26 @@ const modeBudgetMs: Record<SearchMode, number> = {
   quality: 35000,
 }
 
-const SearchProgress = ({ phase, sourceCount, subSteps = [], startedAt, mode = 'speed' }: Props) => {
+const SearchProgress = ({
+  phase,
+  sourceCount,
+  subSteps = [],
+  startedAt,
+  mode = 'speed',
+  subStepArrivals,
+  currentStep,
+  currentStepElapsedMs,
+  failingStep,
+  failingElapsedMs,
+  errorMessage,
+}: Props) => {
   void sourceCount
   // Wall-clock tick — drives both ETA and the creative ticker rotation.
+  // Keep ticking on error so the failure-state elapsed counter stays
+  // accurate relative to `Date.now()` (no-op if nothing is reading it).
   const [now, setNow] = useState(() => Date.now())
   useEffect(() => {
-    if (phase === 'complete' || phase === 'error') return
+    if (phase === 'complete') return
     const id = setInterval(() => setNow(Date.now()), 500)
     return () => clearInterval(id)
   }, [phase])
@@ -98,32 +129,52 @@ const SearchProgress = ({ phase, sourceCount, subSteps = [], startedAt, mode = '
     return pool[step]
   }, [phase, now])
 
-  // Substep peek: the concrete current action, if the pipeline has emitted one.
+  // Substep peek: the concrete current action, if the pipeline has
+  // emitted one. Returns an object `{label, elapsedSec}` so the view
+  // can render "Reading reuters.com · 2.4s" — the elapsed bit is the
+  // difference between "now" and when this substep first arrived in
+  // `subStepArrivals`. That's what makes the progress feel real-time
+  // instead of looking like a cycling ticker.
   const peek = useMemo(() => {
     const last = subSteps[subSteps.length - 1]
     if (!last) return null
+
+    const keyBody = (() => {
+      try {
+        return typeof last.data === 'string'
+          ? last.data
+          : JSON.stringify(last.data ?? '').slice(0, 120)
+      } catch {
+        return ''
+      }
+    })()
+    const key = `${last.type}:${keyBody}`
+    const arrivedAt = subStepArrivals?.[key]
+    const elapsedSec = arrivedAt
+      ? Math.max(0, Math.round((now - arrivedAt) / 100) / 10)
+      : null
+
+    let label: string | null = null
     if (last.type === 'searching') {
       const q = (last.data as string[] | undefined)?.[0]
-      return q ? `Searching "${q}"` : null
-    }
-    if (last.type === 'searchResults') {
+      label = q ? `Searching "${q}"` : null
+    } else if (last.type === 'searchResults') {
       const n = Array.isArray(last.data) ? last.data.length : 0
-      return n > 0 ? `Pulled ${n} source${n === 1 ? '' : 's'}` : null
-    }
-    if (last.type === 'reading') {
+      label = n > 0 ? `Pulled ${n} source${n === 1 ? '' : 's'}` : null
+    } else if (last.type === 'reading') {
       const urls = (last.data as string[] | undefined) || []
       try {
         const host = urls[0] ? new URL(urls[0]).hostname.replace('www.', '') : null
-        return host ? `Reading ${host}` : null
+        label = host ? `Reading ${host}` : null
       } catch {
-        return 'Reading source'
+        label = 'Reading source'
       }
+    } else if (last.type === 'reasoning') {
+      label = typeof last.data === 'string' ? last.data : 'Reasoning through the findings'
     }
-    if (last.type === 'reasoning') {
-      return typeof last.data === 'string' ? last.data : 'Reasoning through the findings'
-    }
-    return null
-  }, [subSteps])
+
+    return label ? { label, elapsedSec } : null
+  }, [subSteps, subStepArrivals, now])
 
   // ETA: signed remaining seconds against the mode budget. Positive means
   // "time left"; zero or negative means we're past the budget and the UI
@@ -135,13 +186,70 @@ const SearchProgress = ({ phase, sourceCount, subSteps = [], startedAt, mode = '
     return Math.round((budget - elapsed) / 1000)
   }, [startedAt, now, mode])
 
-  if (phase === 'complete' || phase === 'error') return null
+  if (phase === 'complete') return null
 
-  // Prefer concrete substep peek over creative ticker when both exist — the
-  // real pipeline signal is more useful once it's arrived. Always have a
-  // headline so the layout row never collapses to empty.
-  const headline = peek || ticker || 'Warming up the pipeline…'
+  // ── Failure card ──────────────────────────────────────────
+  // Shown when the Phoenix pipeline emits {:error, ...}. Carries the
+  // exact stage that failed ("classifier" / "researcher" / "answer")
+  // and how long that stage had been running when the crash happened,
+  // plus the raw error message underneath. This is the "exactly when
+  // it failed and in what step" the user asked for.
+  if (phase === 'error') {
+    const elapsedStr =
+      typeof failingElapsedMs === 'number'
+        ? `${(failingElapsedMs / 1000).toFixed(1)}s`
+        : null
+
+    const stepLabel = failingStep
+      ? failingStep.charAt(0).toUpperCase() + failingStep.slice(1)
+      : 'the pipeline'
+
+    return (
+      <div
+        className="mb-6 border border-[var(--border-danger)] rounded-spine p-4 flex flex-col gap-2"
+        role="alert"
+        aria-live="assertive"
+      >
+        <div className="flex items-center gap-2">
+          <span className="text-small font-semibold text-[var(--text-danger)] tracking-tight">
+            ✕ Failed in {stepLabel}
+            {elapsedStr ? ` after ${elapsedStr}` : ''}
+          </span>
+        </div>
+        {errorMessage && (
+          <p className="text-caption text-[var(--text-secondary)] leading-relaxed font-mono break-words">
+            {errorMessage}
+          </p>
+        )}
+      </div>
+    )
+  }
+
+  // ── Active pipeline render ────────────────────────────────
+  //
+  // Prefer concrete substep peek over creative ticker when both exist —
+  // the real pipeline signal is more useful once it's arrived. Always
+  // have a headline so the layout row never collapses to empty.
+  const peekLabel = peek?.label
+  const peekElapsed = peek?.elapsedSec
+  const headline = peekLabel || ticker || 'Warming up the pipeline…'
   const elapsedSec = startedAt ? Math.max(0, Math.round((now - startedAt) / 1000)) : null
+
+  // "Waiting on X for Y.Ys" — the real-time stage hint. Only shown when
+  // we don't have a concrete substep peek (the peek is even better, so
+  // defer to it). Uses the Phoenix-reported `currentStepElapsedMs` if
+  // available, otherwise falls back to client-side wall-clock.
+  const stageHint = (() => {
+    if (peekLabel) return null
+    if (!currentStep) return null
+    const ms =
+      typeof currentStepElapsedMs === 'number' && currentStepElapsedMs > 0
+        ? currentStepElapsedMs
+        : null
+    const tenths = ms !== null ? Math.max(0, Math.round(ms / 100) / 10) : null
+    const pretty = currentStep.charAt(0).toUpperCase() + currentStep.slice(1)
+    return tenths !== null ? `Waiting on ${pretty} · ${tenths}s` : `Waiting on ${pretty}`
+  })()
 
   return (
     <div className="mb-6 flex flex-col items-start" role="status" aria-live="polite">
@@ -189,6 +297,9 @@ const SearchProgress = ({ phase, sourceCount, subSteps = [], startedAt, mode = '
             className="text-small text-[var(--text-primary)] font-medium tracking-tight truncate flex-1 min-w-0"
           >
             {headline}
+            {typeof peekElapsed === 'number' && peekElapsed > 0 && (
+              <span className="ml-2 text-[var(--text-muted)] tabular-nums">· {peekElapsed}s</span>
+            )}
           </motion.p>
         </AnimatePresence>
 
@@ -208,6 +319,15 @@ const SearchProgress = ({ phase, sourceCount, subSteps = [], startedAt, mode = '
           </span>
         )}
       </div>
+
+      {/* Real-time stage hint — shown only when there's no concrete peek,
+          so the user still sees "Waiting on Classifier · 2.1s" during the
+          initial classify phase before any substeps have been emitted. */}
+      {stageHint && (
+        <p className="mt-1 text-caption text-[var(--text-muted)] tabular-nums">
+          {stageHint}
+        </p>
+      )}
     </div>
   )
 }

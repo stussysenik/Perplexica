@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { navigate, routes } from '@redwoodjs/router'
 import { Flask, ChartLineUp, Compass } from '@phosphor-icons/react'
@@ -12,7 +12,8 @@ import { EASE, DURATION } from 'src/lib/motion'
  */
 const ENABLE_DISCOVER_FEED = false
 
-const PAGE_TITLE = 'Discover — FYOA'
+// Tab title is managed globally in App.tsx (`titleTemplate="Find Your Own
+// Answer"`) so the browser tab reads the same thing on every route.
 
 const rubrics = [
   {
@@ -66,8 +67,6 @@ const DiscoverPage = () => {
   const [activeKey, setActiveKey] = useState('research')
 
   const activeRubric = rubrics.find(r => r.key === activeKey) || rubrics[0]
-
-  useEffect(() => { document.title = PAGE_TITLE }, [])
 
   const onSuggestionClick = (query: string) => {
     navigate(routes.home({ q: query }))
