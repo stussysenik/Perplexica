@@ -1,10 +1,18 @@
-declare const process: any
+declare const process: { env: { PHOENIX_URL?: string } }
 
-const getPhoenixUrl = () => {
+const getPhoenixUrl = (): string => {
+  // Runtime override: index.html can set `window.__PHOENIX_URL__` for
+  // remote/tunnel access. Otherwise fall back to the build-time value
+  // Redwood stamps into the bundle from process.env.PHOENIX_URL
+  // (whitelisted in redwood.toml [web].includeEnvironmentVariables).
+  // Direct dot-access is required — optional chaining (`process?.env?.X`)
+  // compiles to `process == null ? void 0 : ...` which Redwood's
+  // string-replace transform does NOT match, leaving a live `process`
+  // reference that crashes the browser with "process is not defined".
   if (typeof window !== 'undefined') {
-    return (window as any).__PHOENIX_URL__ || process?.env?.PHOENIX_URL || ''
+    return (window as any).__PHOENIX_URL__ || process.env.PHOENIX_URL || ''
   }
-  return process?.env?.PHOENIX_URL || 'http://localhost:4000'
+  return process.env.PHOENIX_URL || 'http://localhost:4000'
 }
 
 export const phoenixUrl = getPhoenixUrl()
