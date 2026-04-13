@@ -44,3 +44,15 @@ zig/.zig-cache/
 mise.toml
 .superpowers/
 tsconfig.tsbuildinfo
+
+# Local scratch / one-off scripts / legacy snapshots — never ship
+legacy-nextjs/
+__pycache__/
+*.pyc
+chess_pieces.py
+test_chess.py
+test_nvidia_*.py
+CHESS_ANIMATION_FEATURE.md
+verify-tool
+verify_deploy.py
+searxng/searxng-src/
