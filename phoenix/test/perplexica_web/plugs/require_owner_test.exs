@@ -4,9 +4,15 @@ defmodule PerplexicaWeb.Plugs.RequireOwnerTest do
   alias PerplexicaWeb.Plugs.RequireOwner
 
   setup do
-    # Snapshot the current allowlist so tests don't leak config
-    original = Application.get_env(:perplexica, :github_allowlist, [])
-    on_exit(fn -> Application.put_env(:perplexica, :github_allowlist, original) end)
+    # Snapshot the current allowlist and bypass flag so tests don't leak config
+    original_allowlist = Application.get_env(:perplexica, :github_allowlist, [])
+    original_bypass = Application.get_env(:perplexica, :auth_bypass, false)
+
+    on_exit(fn ->
+      Application.put_env(:perplexica, :github_allowlist, original_allowlist)
+      Application.put_env(:perplexica, :auth_bypass, original_bypass)
+    end)
+
     :ok
   end
 
@@ -84,5 +90,31 @@ defmodule PerplexicaWeb.Plugs.RequireOwnerTest do
 
     assert conn.status == 403
     assert conn.halted
+  end
+
+  test "auth_bypass true: passes through with preview identity and no session" do
+    Application.put_env(:perplexica, :auth_bypass, true)
+    Application.put_env(:perplexica, :github_allowlist, ["senik"])
+
+    conn =
+      build_session_conn()
+      |> RequireOwner.call([])
+
+    refute conn.halted
+    assert conn.status == nil
+    assert conn.assigns[:github_username] == "preview"
+  end
+
+  test "auth_bypass true: overrides a real allowlisted session with preview" do
+    Application.put_env(:perplexica, :auth_bypass, true)
+    Application.put_env(:perplexica, :github_allowlist, ["senik"])
+
+    conn =
+      build_session_conn()
+      |> Plug.Conn.put_session(:github_username, "senik")
+      |> RequireOwner.call([])
+
+    refute conn.halted
+    assert conn.assigns[:github_username] == "preview"
   end
 end

@@ -10,6 +10,7 @@ import {
   Moon,
   GearSix,
 } from '@phosphor-icons/react'
+import PreviewModeBanner from 'src/components/PreviewModeBanner/PreviewModeBanner'
 
 interface Props {
   children: ReactNode
@@ -31,7 +32,9 @@ const AppLayout = ({ children }: Props) => {
   const { pathname } = useLocation()
 
   return (
-    <div className="grid h-dvh overflow-hidden grid-cols-1 grid-rows-[1fr_auto] lg:grid-cols-[240px_1fr] lg:grid-rows-1">
+    <div className="flex flex-col h-dvh">
+      <PreviewModeBanner />
+      <div className="flex-1 min-h-0 grid overflow-hidden grid-cols-1 grid-rows-[1fr_auto] lg:grid-cols-[240px_1fr] lg:grid-rows-1">
       {/* Skip to content — accessibility */}
       <a
         href="#main-content"
@@ -169,6 +172,7 @@ const AppLayout = ({ children }: Props) => {
         </div>
       </main>
 
+      </div>
       {/* Bottom Navigation — mobile only */}
       <nav
         className="fixed bottom-0 left-0 right-0 z-40 lg:hidden border-t border-[var(--border-default)] bg-[var(--surface-primary)] pb-[env(safe-area-inset-bottom)]"

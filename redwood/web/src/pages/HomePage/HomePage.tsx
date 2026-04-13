@@ -1,4 +1,4 @@
-import { useRef, useEffect, lazy, Suspense } from 'react'
+import { useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useLocation } from '@redwoodjs/router'
 import { useSearch } from 'src/lib/useSearch'
@@ -7,8 +7,6 @@ import { variants, transition } from 'src/lib/motion'
 import MessageBox from 'src/components/Chat/MessageBox'
 import MessageInput from 'src/components/Chat/MessageInput'
 import VerifiedBadge from 'src/components/ui/VerifiedBadge'
-
-const ChessBoard = lazy(() => import('src/components/Chess/Chess'))
 
 const HomePage = () => {
   const { messages, loading, sendMessage, mode, setMode, clearChat, chatId } = useSearch()
@@ -128,22 +126,6 @@ function EmptyState({ onSend, loading, mode, onModeChange }: { onSend: (q: strin
             transparent={true}
           />
         </motion.div>
-
-        {/* The Chess Task */}
-        {/* Feature Tag: Chess Animation is hidden */}
-        {false && (
-          <div className="mt-12 w-full">
-            <Suspense fallback={<div className="h-64 flex items-center justify-center text-[var(--text-muted)] italic">Loading pieces...</div>}>
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.6, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-              >
-                <ChessBoard />
-              </motion.div>
-            </Suspense>
-          </div>
-        )}
       </div>
     </div>
   )

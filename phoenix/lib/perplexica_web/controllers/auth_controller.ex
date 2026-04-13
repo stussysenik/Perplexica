@@ -56,6 +56,14 @@ defmodule PerplexicaWeb.AuthController do
     allowlist = Application.get_env(:perplexica, :github_allowlist, [])
 
     cond do
+      Application.get_env(:perplexica, :auth_bypass, false) ->
+        json(conn, %{
+          signed_in: true,
+          username: "preview",
+          avatar_url: nil,
+          auth_bypass: true
+        })
+
       is_nil(username) ->
         json(conn, %{signed_in: false})
 

@@ -5,6 +5,8 @@ defmodule PerplexicaWeb.Plugs.RequireOwner do
   Reads `:github_username` from the session and compares it (case-insensitively)
   against the allowlist configured at `:perplexica, :github_allowlist`.
 
+  - `:auth_bypass` true → assigns `:github_username = "preview"` and continues
+    without touching the session (operator-only escape hatch)
   - No session cookie → HTTP 401 `{"error":"unauthenticated"}`
   - Session present but username not in allowlist (or allowlist empty) → HTTP 403
   - Allowlisted → assigns `:github_username` and continues
@@ -18,6 +20,14 @@ defmodule PerplexicaWeb.Plugs.RequireOwner do
   def init(opts), do: opts
 
   def call(conn, _opts) do
+    if Application.get_env(:perplexica, :auth_bypass, false) do
+      assign(conn, :github_username, "preview")
+    else
+      enforce(conn)
+    end
+  end
+
+  defp enforce(conn) do
     username = get_session(conn, :github_username)
     allowlist = Application.get_env(:perplexica, :github_allowlist, [])
 

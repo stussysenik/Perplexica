@@ -15,6 +15,7 @@ export interface Session {
   status: SessionStatus
   username?: string
   avatarUrl?: string
+  authBypass: boolean
   refresh: () => Promise<void>
   signOut: () => Promise<void>
 }
@@ -25,12 +26,14 @@ interface WhoamiResponse {
   signed_in: boolean
   username?: string
   avatar_url?: string | null
+  auth_bypass?: boolean
 }
 
 export function SessionProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<SessionStatus>('loading')
   const [username, setUsername] = useState<string | undefined>()
   const [avatarUrl, setAvatarUrl] = useState<string | undefined>()
+  const [authBypass, setAuthBypass] = useState<boolean>(false)
 
   const refresh = useCallback(async () => {
     try {
@@ -41,22 +44,26 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         setStatus('signed_out')
         setUsername(undefined)
         setAvatarUrl(undefined)
+        setAuthBypass(false)
         return
       }
       const data: WhoamiResponse = await res.json()
       if (data.signed_in) {
         setUsername(data.username)
         setAvatarUrl(data.avatar_url ?? undefined)
+        setAuthBypass(data.auth_bypass === true)
         setStatus('signed_in')
       } else {
         setUsername(undefined)
         setAvatarUrl(undefined)
+        setAuthBypass(false)
         setStatus('signed_out')
       }
     } catch {
       setStatus('signed_out')
       setUsername(undefined)
       setAvatarUrl(undefined)
+      setAuthBypass(false)
     }
   }, [])
 
@@ -86,8 +93,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, [refresh])
 
   const value = useMemo<Session>(
-    () => ({ status, username, avatarUrl, refresh, signOut }),
-    [status, username, avatarUrl, refresh, signOut]
+    () => ({ status, username, avatarUrl, authBypass, refresh, signOut }),
+    [status, username, avatarUrl, authBypass, refresh, signOut]
   )
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>

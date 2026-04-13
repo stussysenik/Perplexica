@@ -70,6 +70,23 @@ end
 
 config :perplexica, :github_allowlist, github_allowlist
 
+# ----- AUTH_BYPASS escape hatch (auth-github-gate delta) ------------------
+# Operator-only short-circuit for the full auth + allowlist gate. Accepts
+# "true" / "1" / "yes" as truthy. Loud boot warning when active so it can't
+# silently persist. See openspec/changes/unblock-prod-preview/.
+auth_bypass = System.get_env("AUTH_BYPASS") in ["true", "1", "yes"]
+
+if auth_bypass and config_env() != :test do
+  require Logger
+
+  Logger.warning(
+    "[Auth] AUTH_BYPASS=true — authentication is disabled, all requests " <>
+      "treated as signed-in as 'preview'. DO NOT USE IN PRODUCTION FOR LONG."
+  )
+end
+
+config :perplexica, :auth_bypass, auth_bypass
+
 if config_env() == :prod do
   database_url =
     System.get_env("DATABASE_URL") ||
