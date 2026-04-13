@@ -9,9 +9,10 @@
 [![Language](https://img.shields.io/github/languages/top/stussysenik/Perplexica?style=flat-square)]()
 [![License](https://img.shields.io/github/license/stussysenik/Perplexica?style=flat-square)]()
 [![Last Commit](https://img.shields.io/github/last-commit/stussysenik/Perplexica?style=flat-square)]()
+[![Version](https://img.shields.io/badge/version-1.0.0-blue?style=flat-square)]()
 [![Lighthouse](https://img.shields.io/badge/Lighthouse-100%2F100%2F100-brightgreen?style=flat-square)]()
 
-[Live Demo](https://perplexica-search.fly.dev/index.html)
+[Live Demo](https://perplexica-production-41f5.up.railway.app/) — hosted on Railway
 
 </div>
 
@@ -30,16 +31,18 @@ Built with **RedwoodJS** (React frontend) + **Elixir/Phoenix** (fault-tolerant b
 - [What It Is](#what-it-is)
 - [Why It Exists](#why-it-exists)
 - [How It Works](#how-it-works)
+- [Authentication](#authentication)
 - [Screenshots](#screenshots)
 - [Features](#features)
 - [Design System](#design-system)
 - [Architecture](#architecture)
 - [Tech Stack](#tech-stack)
 - [Setup](#setup)
+- [Deploying to Railway](#deploying-to-railway)
 - [Project Structure](#project-structure)
 - [Audit Results](#audit-results)
 - [Database Schema](#database-schema)
-- [Progress Ledger](#progress-ledger)
+- [Changelog](#changelog)
 - [License](#license)
 
 ---
@@ -84,6 +87,55 @@ User types query
 
 **Source traceability**: Every source card shows the domain, title, and a citation badge. Click the badge in the answer to jump to the source. Expand "View extracted text" to see the raw content the AI used.
 
+## Authentication
+
+Perplexica is a **private search console** — access is gated behind GitHub OAuth and a server-side allowlist. There is no public sign-up.
+
+### How it works
+
+```
+Browser → /auth/github → GitHub OAuth → /auth/github/callback
+                                              │
+                              username in GITHUB_ALLOWLIST?
+                                    │                    │
+                                   yes                   no
+                                    │                    │
+                          set HttpOnly session      redirect /?auth_error=forbidden
+                          cookie + redirect /
+                                    │
+                          GET /auth/whoami → {signed_in: true}
+                          → app renders
+```
+
+1. **Sign in** — The splash screen (`SignInGate`) navigates to `/auth/github`. Ueberauth redirects to GitHub with a CSRF `state` parameter. GitHub redirects back to `/auth/github/callback`.
+2. **Allowlist check** — Phoenix extracts the GitHub username from the OAuth token and compares it (case-insensitively) against `GITHUB_ALLOWLIST`. If it's not there, the session is dropped and the user is redirected with `?auth_error=forbidden`.
+3. **Session cookie** — On success, Phoenix writes a signed `HttpOnly` session cookie (`SameSite=Lax`, `Secure=true` in production, 30-day `max_age`). The cookie is scoped to the domain, so it works for every subsequent request without any client-side token management.
+4. **Every page load** — `SessionProvider` calls `GET /auth/whoami`. Phoenix reads the session cookie and returns `{signed_in, username, avatar_url}`. The React tree either renders the splash or the full app based on this.
+5. **Gated API** — Every `POST /api/graphql` request passes through `RequireOwner` in the Phoenix pipeline. No valid session → `401`. Username removed from allowlist → `403`. Both dispatch `fyoa:session-revoked` in the browser, which triggers a `whoami` refresh.
+
+### Why this design
+
+| Choice | Reason |
+|--------|--------|
+| **Session cookie, not a JWT** | No client-side token storage. `HttpOnly` means XSS cannot steal the credential. The server is the only party that can read or invalidate the session. |
+| **Single domain** (Phoenix serves Redwood static files) | `SameSite=Lax` cookies don't cross origins. Serving the SPA from the same Phoenix process and domain means every fetch — including `credentials: 'include'` GraphQL calls — is same-origin. No CORS cookie negotiation needed. |
+| **GITHUB_ALLOWLIST as env var** | One operator, one process. An env var is the simplest possible gate: `railway variable set GITHUB_ALLOWLIST=yourusername`. No admin UI, no database table, instant to update. |
+| **`whoami` on every load** | Single authoritative source of truth. No stale client cache. Cost is one sub-millisecond Phoenix read per page load. |
+
+### Environment variables
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `GITHUB_CLIENT_ID` | Yes | OAuth App client ID from github.com/settings/developers |
+| `GITHUB_CLIENT_SECRET` | Yes | OAuth App client secret |
+| `GITHUB_ALLOWLIST` | Yes | Comma-separated GitHub usernames allowed to sign in (e.g. `alice,bob`) |
+| `SECRET_KEY_BASE` | Yes | Session signing key — generate with `mix phx.gen.secret` |
+| `PHX_HOST` | Yes (prod) | The production hostname (e.g. `your-app.up.railway.app`) |
+
+> **GitHub OAuth App setup**: Register at github.com/settings/developers. Set "Authorization callback URL" to `https://your-domain/auth/github/callback`. Homepage URL can be anything.
+
+---
+
 ## Screenshots
 
 ### Search Flow (Desktop)
@@ -111,6 +163,7 @@ User types query
 
 ## Features
 
+- **Private GitHub OAuth Gate** -- Sign in with GitHub; only allowlisted usernames can access the app. HttpOnly session cookie, no client-side token storage.
 - **AI-Powered Web Search** -- Natural language queries with cited, source-traceable answers
 - **Real-Time Search Progress** -- WebSocket-powered staged indicators: classifying, searching (N sources), analyzing, writing
 - **Source Traceability** -- Expandable source cards with "View extracted text" for full transparency
@@ -166,33 +219,55 @@ Montserrat with 7-step scale on an 8px baseline: Display (32), H1 (24), H2 (20),
 
 ## Architecture
 
+Everything runs in a **single process on Railway**. The Dockerfile builds the Redwood frontend to static files and embeds them inside the Phoenix OTP release — Phoenix serves both the SPA and the API from one domain. This is intentional: it eliminates cross-origin cookie problems and simplifies deployment to one service, one `Dockerfile`, one Railway project.
+
 ```
 User Browser
-    |
-    |  GraphQL + WebSocket Subscriptions
-    v
-RedwoodJS (Vercel)
-    |  React UI + Tailwind + Phosphor Icons
-    |  Design system: SpineCard, TextAction, OutlineButton, CitationBadge
-    |  Real-time: phoenix-ws.ts -> Absinthe Socket -> PubSub events
-    |
-    |  HTTPS / WSS
-    v
-Phoenix/Elixir (Railway)
-    |  Absinthe GraphQL API
-    |  SearchSupervisor (DynamicSupervisor)
-    |    +-- SearchSession [GenServer] (per search, crash-isolated)
-    |  ModelRegistry [GenServer]
-    |    +-- NIM Provider (primary) --> NVIDIA NIM API
-    |    +-- GLM Provider (fallback) --> Zhipu GLM API
-    |  BraveSearch [Hammer rate limit] --> Brave Search API
-    |
-    v
-PostgreSQL + pgvector
-    9 tables: chats, messages, search_sessions, config,
-    model_providers, uploads, upload_chunks, users,
-    shared_links, bookmarks
+    │
+    │  GET /  → Phoenix serves priv/static/index.html (compiled Redwood SPA)
+    │  GET /auth/whoami → session check
+    │  POST /api/graphql → gated by RequireOwner plug
+    │  WSS /socket → Absinthe subscriptions (search progress)
+    │
+    ▼
+Phoenix/Elixir OTP Release (Railway — single binary)
+    │
+    ├── PerplexicaWeb.Endpoint
+    │     Plug.Static  ──────────────────── serves /priv/static/ (Redwood SPA)
+    │     RequireOwner ──────────────────── GitHub session gate on /api/*
+    │     Absinthe.Plug ─────────────────── GraphQL API on /api/graphql
+    │
+    ├── Auth pipeline (/auth/*)
+    │     Ueberauth  ──────────────────────  /auth/github  → GitHub OAuth redirect
+    │     AuthController ─────────────────  /auth/github/callback → set session cookie
+    │                                        /auth/whoami → session introspection
+    │                                        DELETE /auth/session → sign out
+    │
+    ├── SearchSupervisor [DynamicSupervisor]
+    │     └── SearchSession [GenServer] ──  one per active search, crash-isolated
+    │           Classifier  ──────────────  detects query type, skips web search if unnecessary
+    │           Researcher  ──────────────  agentic loop: search → scrape → reason → repeat
+    │           ModelRegistry [GenServer]
+    │                 NIM Provider (primary)  ──→  NVIDIA NIM API
+    │                 GLM Provider (fallback) ──→  Zhipu GLM API
+    │           BraveSearch [Hammer rate limit] ──→ Brave Search API
+    │
+    └── Repo ──────────────────────────────  Ecto → PostgreSQL + pgvector
+              chats, messages, search_sessions, config,
+              model_providers, uploads, upload_chunks,
+              shared_links, bookmarks
+
+Build pipeline (Dockerfile):
+  1. node:20-alpine  → yarn rw build → redwood/web/dist/
+  2. elixir:1.17     → mix release   ← embeds web/dist/ into priv/static/
+  3. debian:slim     → runtime image (one binary, one PORT, one Railway service)
 ```
+
+### Why a single binary?
+
+The alternative — Redwood on Vercel + Phoenix on Railway — has a critical flaw: `SameSite=Lax` session cookies don't travel cross-origin. Every `credentials: 'include'` GraphQL request from `vercel.app` to `railway.app` would be stripped of its cookie, making session-based auth impossible without CORS-level cookie workarounds (`SameSite=None; Secure`, which requires a fixed production domain and extra CORS preflight headers on every request).
+
+Colocating the SPA inside Phoenix costs nothing at runtime (static files served by `Plug.Static` with gzip) and eliminates the entire cookie-origin problem class.
 
 ## Tech Stack
 
@@ -256,21 +331,36 @@ yarn rw dev web    # Starts on :8910
 
 Open **http://localhost:8910** to use the app.
 
-### Deploying
+### Deploying to Railway
 
-**Phoenix to Fly.io:**
+The repo root `Dockerfile` builds everything into a single OTP release. Railway detects it automatically via `railway.json`.
+
 ```bash
-cd phoenix
-fly launch    # Auto-detects Dockerfile
-fly secrets set NVIDIA_NIM_API_KEY=... BRAVE_SEARCH_API_KEY=... SECRET_KEY_BASE=$(mix phx.gen.secret)
+# 1. Install Railway CLI
+npm install -g @railway/cli
+
+# 2. Login and link project
+railway login
+railway link
+
+# 3. Set required secrets
+railway variable set \
+  GITHUB_CLIENT_ID=<your_oauth_app_client_id> \
+  GITHUB_CLIENT_SECRET=<your_oauth_app_client_secret> \
+  GITHUB_ALLOWLIST=yourgithubusername \
+  SECRET_KEY_BASE=$(openssl rand -base64 48) \
+  PHX_HOST=your-app.up.railway.app \
+  BRAVE_SEARCH_API_KEY=<key> \
+  NVIDIA_NIM_API_KEY=<key> \
+  DATABASE_URL=<postgresql://...>
+
+# 4. Deploy
+railway up
 ```
 
-**Redwood to Vercel:**
-```bash
-cd redwood
-# Connect repo to Vercel, set root directory to "redwood"
-# Set env var: PHOENIX_URL=https://your-app.fly.dev
-```
+Railway will build the Dockerfile, run `mix release`, and start the server. Migrations run automatically at boot via `start.sh`.
+
+> **GitHub OAuth App**: the callback URL must be `https://your-app.up.railway.app/auth/github/callback`.
 
 ## Project Structure
 
@@ -361,9 +451,9 @@ Full audit reports in [`docs/audits/`](docs/audits/).
 | `shared_links` | Shareable answer URLs with slug |
 | `bookmarks` | Saved answers for quick access |
 
-## Progress Ledger
+## Changelog
 
-See [PROGRESS.md](PROGRESS.md) for the complete development timeline.
+See [CHANGELOG.md](CHANGELOG.md) for the full release history.
 
 ## License
 
