@@ -343,7 +343,10 @@ defmodule Perplexica.Models.Registry do
   end
 
   defp maybe_add_nim_from_env(state) do
-    case System.get_env("NVIDIA_NIM_API_KEY") do
+    # Accept either NVIDIA_NIM_API_KEY (canonical) or NIM_API_KEY (shorthand).
+    api_key_env = System.get_env("NVIDIA_NIM_API_KEY") || System.get_env("NIM_API_KEY")
+
+    case api_key_env do
       nil ->
         state
 

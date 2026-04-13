@@ -270,13 +270,49 @@ defmodule Perplexica.Search.Session do
   end
 
   # ── PubSub ─────────────────────────────────────────────────────────
+  #
+  # Publish search events through Absinthe.Subscription so GraphQL
+  # subscribers on `search_updated(sessionId: ...)` actually receive them.
+  # The root value we push here becomes the root for the subscription's
+  # resolve fn in `PerplexicaWeb.Schema`, so we shape it to match the
+  # `:search_event` object type (type, block, block_id, patch, data).
 
   defp publish(session_id, event) do
+    root = event_to_root(event)
+
+    Absinthe.Subscription.publish(
+      PerplexicaWeb.Endpoint,
+      root,
+      search_updated: "search:#{session_id}"
+    )
+
+    # Keep raw Phoenix.PubSub broadcast as a secondary channel so any
+    # local listeners (tests, debug tooling) still see events.
     Phoenix.PubSub.broadcast(
       Perplexica.PubSub,
       "search:#{session_id}",
       {:search_event, session_id, event}
     )
+  end
+
+  defp event_to_root({:block, block}) do
+    %{type: "block", block: block, block_id: block[:id], patch: nil, data: nil}
+  end
+
+  defp event_to_root({:update_block, block_id, patch}) do
+    %{type: "update_block", block: nil, block_id: block_id, patch: patch, data: nil}
+  end
+
+  defp event_to_root(:research_complete) do
+    %{type: "research_complete", block: nil, block_id: nil, patch: nil, data: nil}
+  end
+
+  defp event_to_root(:message_end) do
+    %{type: "message_end", block: nil, block_id: nil, patch: nil, data: nil}
+  end
+
+  defp event_to_root({:error, message}) do
+    %{type: "error", block: nil, block_id: nil, patch: nil, data: to_string(message)}
   end
 
   # ── Database Persistence ───────────────────────────────────────────

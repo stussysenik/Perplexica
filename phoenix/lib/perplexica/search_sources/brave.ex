@@ -250,6 +250,18 @@ defmodule Perplexica.SearchSources.Brave do
 
   defp topics_config do
     %{
+      "research" => %{
+        queries: ["scientific research", "academic breakthroughs", "quantum physics", "biotechnology"],
+        links: ["phys.org", "sciencedaily.com", "nature.com"]
+      },
+      "analysis" => %{
+        queries: ["market analysis", "economic trends", "data analysis", "geopolitics"],
+        links: ["economist.com", "ft.com", "reuters.com"]
+      },
+      "discovery" => %{
+        queries: ["new discoveries", "hidden gems", "exploration", "innovation"],
+        links: ["nationalgeographic.com", "smithsonianmag.com", "npr.org"]
+      },
       "tech" => %{
         queries: ["technology news", "latest tech", "AI", "science and innovation"],
         links: ["techcrunch.com", "wired.com", "theverge.com"]
@@ -274,6 +286,7 @@ defmodule Perplexica.SearchSources.Brave do
   end
 
   defp brave_api_key do
-    System.get_env("BRAVE_SEARCH_API_KEY") || ""
+    # Accept either BRAVE_SEARCH_API_KEY (canonical) or BRAVE_API_KEY (shorthand).
+    System.get_env("BRAVE_SEARCH_API_KEY") || System.get_env("BRAVE_API_KEY") || ""
   end
 end

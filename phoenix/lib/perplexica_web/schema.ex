@@ -9,6 +9,7 @@ defmodule PerplexicaWeb.Schema do
 
   import_types PerplexicaWeb.Schema.SearchTypes
   import_types PerplexicaWeb.Schema.ChatTypes
+  import_types PerplexicaWeb.Schema.ModeConfigTypes
 
   query do
     @desc "List all chats"
@@ -63,6 +64,11 @@ defmodule PerplexicaWeb.Schema do
     field :bookmarks, list_of(:bookmark) do
       resolve &PerplexicaWeb.Resolvers.ShareResolver.list_bookmarks/3
     end
+
+    @desc "List the per-mode research configurations"
+    field :mode_configs, list_of(non_null(:mode_config)) do
+      resolve &PerplexicaWeb.Resolvers.ModeConfigResolver.list/3
+    end
   end
 
   mutation do
@@ -95,6 +101,20 @@ defmodule PerplexicaWeb.Schema do
       arg :message_id, non_null(:id)
       resolve &PerplexicaWeb.Resolvers.ShareResolver.toggle_bookmark/3
     end
+
+    @desc "Update a search mode's iteration cap and budget"
+    field :update_mode_config, :mode_config do
+      arg :mode, non_null(:string)
+      arg :max_iterations, non_null(:integer)
+      arg :budget_ms, non_null(:integer)
+      resolve &PerplexicaWeb.Resolvers.ModeConfigResolver.update/3
+    end
+
+    @desc "Reset a search mode to its seed defaults"
+    field :reset_mode_config, :mode_config do
+      arg :mode, non_null(:string)
+      resolve &PerplexicaWeb.Resolvers.ModeConfigResolver.reset/3
+    end
   end
 
   subscription do
@@ -106,14 +126,7 @@ defmodule PerplexicaWeb.Schema do
         {:ok, topic: "search:#{args.session_id}"}
       end
 
-      trigger :start_search,
-        topic: fn result ->
-          "search:#{result.session_id}"
-        end
-
-      resolve fn %{search_event: event}, _, _ ->
-        {:ok, event}
-      end
+      resolve fn root, _, _ -> {:ok, root} end
     end
   end
 end

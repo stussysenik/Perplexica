@@ -16,9 +16,9 @@ defmodule Perplexica.Search.Actions.Registry do
   - `done` — Signal that research is complete
   """
 
-  alias Perplexica.Search.Actions.{WebSearch, AcademicSearch, DiscussionSearch, ScrapeUrl, Done}
+  alias Perplexica.Search.Actions.{WebSearch, ExaSearch, AcademicSearch, DiscussionSearch, ScrapeUrl, Done}
 
-  @actions [WebSearch, AcademicSearch, DiscussionSearch, ScrapeUrl, Done]
+  @actions [WebSearch, ExaSearch, AcademicSearch, DiscussionSearch, ScrapeUrl, Done]
 
   @doc "Get all actions that are enabled for the given config."
   def available_actions(config) do

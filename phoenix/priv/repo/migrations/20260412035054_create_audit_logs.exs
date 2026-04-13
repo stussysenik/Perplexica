@@ -3,7 +3,7 @@ defmodule Perplexica.Repo.Migrations.CreateAuditLogs do
 
   def change do
     create table(:audit_logs) do
-      add :user_id, references(:users, on_delete: :nothing)
+      add :user_id, references(:users, type: :binary_id, on_delete: :nothing)
       add :action, :string, null: false
       add :resource_type, :string, null: false
       add :resource_id, :string

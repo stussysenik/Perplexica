@@ -49,20 +49,21 @@ defmodule PerplexicaWeb.Resolvers.ShareResolver do
   end
 
   # ── Bookmarks ────────────────────────────────────────────────────────
+  #
+  # Client sends `messageId` as the UUID-shaped `message_id` string on the
+  # Message row (not its integer PK). We look up the Message by that UUID
+  # and use its real integer `id` for the Bookmark foreign key.
 
-  def toggle_bookmark(_parent, %{message_id: message_id}, _context) do
-    message_id = to_integer(message_id)
+  def toggle_bookmark(_parent, %{message_id: message_id_str}, _context) do
+    case resolve_message_pk(message_id_str) do
+      {:error, reason} ->
+        {:error, reason}
 
-    case Repo.get_by(Bookmark, message_id: message_id) do
-      nil ->
-        # Create bookmark
-        case Repo.get(Message, message_id) do
+      {:ok, message_pk} ->
+        case Repo.get_by(Bookmark, message_id: message_pk) do
           nil ->
-            {:error, "Message not found"}
-
-          _message ->
             %Bookmark{}
-            |> Bookmark.changeset(%{message_id: message_id})
+            |> Bookmark.changeset(%{message_id: message_pk})
             |> Repo.insert()
             |> case do
               {:ok, bookmark} ->
@@ -71,23 +72,41 @@ defmodule PerplexicaWeb.Resolvers.ShareResolver do
               {:error, changeset} ->
                 {:error, format_errors(changeset)}
             end
+
+          bookmark ->
+            Repo.delete(bookmark)
+            {:ok, %{bookmarked: false, bookmark: nil}}
         end
-
-      bookmark ->
-        # Remove bookmark
-        Repo.delete(bookmark)
-        {:ok, %{bookmarked: false, bookmark: nil}}
     end
   end
 
-  def get_bookmark(_parent, %{message_id: message_id}, _context) do
-    message_id = to_integer(message_id)
-
-    case Repo.get_by(Bookmark, message_id: message_id) do
-      nil -> {:ok, nil}
-      bookmark -> {:ok, format_bookmark(bookmark)}
+  def get_bookmark(_parent, %{message_id: message_id_str}, _context) do
+    case resolve_message_pk(message_id_str) do
+      {:error, _} -> {:ok, nil}
+      {:ok, message_pk} ->
+        case Repo.get_by(Bookmark, message_id: message_pk) do
+          nil -> {:ok, nil}
+          bookmark -> {:ok, format_bookmark(bookmark)}
+        end
     end
   end
+
+  # Accept either a bigint PK (legacy) or the client-side UUID and return the
+  # underlying integer PK used by Bookmark.message_id.
+  defp resolve_message_pk(value) when is_binary(value) do
+    case Integer.parse(value) do
+      {int, ""} ->
+        {:ok, int}
+
+      _ ->
+        case Repo.get_by(Message, message_id: value) do
+          nil -> {:error, "Message not found"}
+          %Message{id: id} -> {:ok, id}
+        end
+    end
+  end
+
+  defp resolve_message_pk(value) when is_integer(value), do: {:ok, value}
 
   def list_bookmarks(_parent, _args, _context) do
     bookmarks =

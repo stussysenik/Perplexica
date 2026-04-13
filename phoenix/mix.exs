@@ -10,6 +10,11 @@ defmodule Perplexica.MixProject do
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
       deps: deps(),
+      releases: [
+        perplexica: [
+          validate_compile_env: false
+        ]
+      ],
       listeners: [Phoenix.CodeReloader]
     ]
   end
@@ -58,6 +63,9 @@ defmodule Perplexica.MixProject do
       {:hammer, "~> 7.0"},
       # CORS
       {:cors_plug, "~> 3.0"},
+      # OAuth (GitHub sign-in gate)
+      {:ueberauth, "~> 0.10"},
+      {:ueberauth_github, "~> 0.8"},
       # Observability
       {:sentry, "~> 10.0"},
       # Vector similarity (pgvector)

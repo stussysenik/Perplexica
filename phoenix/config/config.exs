@@ -30,6 +30,22 @@ config :logger, :default_formatter,
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
 
+config :perplexica, :cors_origins, [
+  ~r/^https?:\/\/localhost(:\d+)?$/,
+  ~r/^https?:\/\/127\.0\.0\.1(:\d+)?$/,
+  "https://perplexica-search.fly.dev"
+]
+
+# Ueberauth — GitHub OAuth provider configuration.
+# Client id + secret are read at runtime from env vars in runtime.exs.
+config :ueberauth, Ueberauth,
+  providers: [
+    github: {Ueberauth.Strategy.Github, [default_scope: "read:user"]}
+  ]
+
+# Default allowlist. Overridden in runtime.exs from GITHUB_ALLOWLIST env var.
+config :perplexica, :github_allowlist, []
+
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

@@ -23,6 +23,28 @@ end
 config :perplexica, PerplexicaWeb.Endpoint,
   http: [port: String.to_integer(System.get_env("PORT", "4000"))]
 
+# ----- GitHub OAuth gate (auth-github-gate) -------------------------------
+# Ueberauth GitHub strategy credentials. Missing values lock sign-in down
+# so RequireOwner rejects everything.
+config :ueberauth, Ueberauth.Strategy.Github.OAuth,
+  client_id: System.get_env("GITHUB_CLIENT_ID"),
+  client_secret: System.get_env("GITHUB_CLIENT_SECRET")
+
+# Allowlist of GitHub usernames that may reach /api/graphql. Comma-separated,
+# matched case-insensitively.
+github_allowlist =
+  (System.get_env("GITHUB_ALLOWLIST") || "")
+  |> String.split(",", trim: true)
+  |> Enum.map(&String.trim/1)
+  |> Enum.map(&String.downcase/1)
+
+if github_allowlist == [] do
+  require Logger
+  Logger.warning("GITHUB_ALLOWLIST is empty — no users can sign in")
+end
+
+config :perplexica, :github_allowlist, github_allowlist
+
 if config_env() == :prod do
   database_url =
     System.get_env("DATABASE_URL") ||

@@ -6,14 +6,14 @@ defmodule Perplexica.Models.GlmProvider do
   ## Supported Models
 
   Chat:
-  - `glm-4-flash` (free tier)
-  - `glm-4.7-flash` (free tier)
-  - `glm-5.1` (coding plan subscription, ~$3/mo)
+  - `glm-4.5-flash` (free tier, current default)
+  - `glm-4.5` (paid, higher quality)
+  - `glm-4.5-air` (paid, lower latency)
 
   ## Balance Error Handling
 
-  When the coding plan has insufficient balance (error contains "余额"),
-  the provider automatically retries with the free tier model (glm-4-flash).
+  When the paid tier has insufficient balance (error contains "余额"),
+  the provider automatically retries with the free tier model (glm-4.5-flash).
 
   ## No Embeddings
 
@@ -24,17 +24,17 @@ defmodule Perplexica.Models.GlmProvider do
 
   alias Perplexica.Models.HttpClient
 
-  @default_model "glm-4-flash"
-  @free_tier_model "glm-4-flash"
+  @default_model "glm-4.5-flash"
+  @free_tier_model "glm-4.5-flash"
 
   # ── Chat Models ──────────────────────────────────────────────────
 
   @impl true
   def chat_models do
     [
-      %{key: "glm-4-flash", name: "GLM-4 Flash (Free)"},
-      %{key: "glm-4.7-flash", name: "GLM-4.7 Flash (Free)"},
-      %{key: "glm-5.1", name: "GLM-5.1 (Coding Plan)"}
+      %{key: "glm-4.5-flash", name: "GLM-4.5 Flash (Free)"},
+      %{key: "glm-4.5", name: "GLM-4.5 (Paid)"},
+      %{key: "glm-4.5-air", name: "GLM-4.5 Air (Paid)"}
     ]
   end
 

@@ -1,15 +1,21 @@
 defmodule PerplexicaWeb.Endpoint do
   use Phoenix.Endpoint, otp_app: :perplexica
 
-  # The session will be stored in the cookie and signed,
-  # this means its contents can be read but not tampered with.
-  # Set :encryption_salt if you would also like to encrypt it.
+  # Signed cookie session. Rotating SECRET_KEY_BASE invalidates all active
+  # sessions (the derived signing key changes). 30-day max age, HttpOnly,
+  # SameSite=Lax, Secure in prod.
   @session_options [
     store: :cookie,
     key: "_perplexica_key",
     signing_salt: "teJ5EcuW",
-    same_site: "Lax"
+    same_site: "Lax",
+    http_only: true,
+    secure: Mix.env() == :prod,
+    max_age: 60 * 60 * 24 * 30
   ]
+
+  # Public accessor so the router pipeline can reuse the same options.
+  def session_options, do: @session_options
 
   # Absinthe WebSocket for GraphQL subscriptions
   use Absinthe.Phoenix.Endpoint

@@ -3,11 +3,17 @@ defmodule Perplexica.Search.Researcher do
   Agentic research loop — iteratively uses LLM tool-calling to search,
   scrape, and gather information before generating a final answer.
 
-  ## Mode-Based Iteration Limits
+  ## Mode-Based Iteration Limits + Soft Time Budget
 
-  - `speed`: 2 iterations max
-  - `balanced`: 6 iterations max
-  - `quality`: 25 iterations max
+  Per-mode `max_iterations` and `budget_ms` come from
+  `Perplexica.Search.ModeConfig` — editable at runtime via the settings
+  page, read from a `:persistent_term` cache on every request.
+
+  The budget is a **soft** limit. Before each new iteration the loop
+  checks `elapsed_ms < budget_ms`; if the budget is exceeded, the loop
+  exits cleanly with whatever results were collected up to the previous
+  iteration. An in-flight LLM call is never interrupted — soft semantics
+  mean "don't start another round after the timer runs out".
 
   ## Loop
 
@@ -16,19 +22,14 @@ defmodule Perplexica.Search.Researcher do
   2. Collect tool calls from response
   3. Execute all tool calls in parallel
   4. Aggregate results into context
-  5. Repeat until `done` action or max iterations
+  5. Repeat until `done`, max iterations, or budget exceeded
   """
 
   require Logger
 
   alias Perplexica.Models.Registry
   alias Perplexica.Search.Actions
-
-  @max_iterations %{
-    "speed" => 2,
-    "balanced" => 6,
-    "quality" => 25
-  }
+  alias Perplexica.Search.ModeConfig
 
   @doc """
   Run the research loop. Returns accumulated search results.
@@ -41,7 +42,13 @@ defmodule Perplexica.Search.Researcher do
   """
   def research(query, config, emit_fn \\ fn _, _ -> :ok end) do
     mode = config[:mode] || "balanced"
-    max_iter = @max_iterations[mode] || 6
+
+    mode_config =
+      try do
+        ModeConfig.get(mode)
+      rescue
+        _ -> %{max_iterations: 6, budget_ms: 16_000}
+      end
 
     tools = Actions.Registry.available_tools(config)
 
@@ -54,7 +61,9 @@ defmodule Perplexica.Search.Researcher do
       ],
       all_results: [],
       iteration: 0,
-      max_iterations: max_iter,
+      max_iterations: mode_config.max_iterations,
+      budget_ms: mode_config.budget_ms,
+      started_at: System.monotonic_time(:millisecond),
       tools: tools,
       config: config,
       emit_fn: emit_fn
@@ -68,7 +77,21 @@ defmodule Perplexica.Search.Researcher do
     {:ok, state.all_results}
   end
 
-  defp run_loop(state) do
+  defp run_loop(%{budget_ms: budget_ms} = state) do
+    elapsed = elapsed_ms(state)
+
+    if elapsed >= budget_ms do
+      Logger.info(
+        "[Researcher] Soft budget (#{budget_ms}ms) exceeded after #{state.iteration} iterations"
+      )
+
+      {:ok, state.all_results}
+    else
+      do_iteration(state)
+    end
+  end
+
+  defp do_iteration(state) do
     opts = %{
       tools: state.tools,
       temperature: 0.7,
@@ -83,6 +106,10 @@ defmodule Perplexica.Search.Researcher do
         Logger.warning("[Researcher] LLM call failed: #{inspect(reason)}")
         {:ok, state.all_results}
     end
+  end
+
+  defp elapsed_ms(%{started_at: started}) do
+    System.monotonic_time(:millisecond) - started
   end
 
   defp handle_response(state, response) do
@@ -111,7 +138,7 @@ defmodule Perplexica.Search.Researcher do
 
   defp execute_and_continue(state, response, tool_calls) do
     # Emit substep info
-    search_calls = Enum.filter(tool_calls, fn tc -> tc.name in ["web_search", "academic_search", "discussion_search"] end)
+    search_calls = Enum.filter(tool_calls, fn tc -> tc.name in ["web_search", "exa_search", "academic_search", "discussion_search"] end)
     scrape_calls = Enum.filter(tool_calls, fn tc -> tc.name == "scrape_url" end)
 
     for tc <- search_calls do
@@ -187,14 +214,17 @@ defmodule Perplexica.Search.Researcher do
     User's custom instructions: #{system_instructions}
 
     Available tools:
-    - web_search: Search the web for current information
+    - web_search: Search the web via Brave. Best for general facts, current news, and wide indexing.
+    - exa_search: Neural search via Exa.ai. Best for high-quality, research-grade, or semantic discovery where meaning matters more than keywords.
     - scrape_url: Read full content from specific URLs
     - done: Signal that you have enough information
 
     Strategy:
-    1. Start with broad web searches to find relevant sources
-    2. Read promising URLs to get detailed information
-    3. When you have enough context, call 'done'
+    1. Start by using BOTH web_search and exa_search to get a diverse range of results.
+    2. Use Brave (web_search) for specific entities, news, and broad coverage.
+    3. Use Exa (exa_search) to find high-signal research papers, technical blogs, or deep-dive articles.
+    4. Read promising URLs to get detailed information.
+    5. When you have enough context, call 'done'.
 
     Be thorough but efficient. Prioritize authoritative and recent sources.
     Always provide diverse search queries to cover different aspects of the topic.

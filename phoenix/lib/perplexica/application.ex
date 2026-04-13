@@ -19,13 +19,27 @@ defmodule Perplexica.Application do
       # Search session supervisor (DynamicSupervisor)
       Perplexica.Search.Supervisor,
       # Start to serve requests, typically the last entry
-      PerplexicaWeb.Endpoint
+      PerplexicaWeb.Endpoint,
+      # Absinthe subscription supervisor — must start AFTER the endpoint so
+      # the pubsub backend is alive. Without this, the Absinthe channel
+      # raises `Pubsub not configured!` on every `doc` push.
+      {Absinthe.Subscription, PerplexicaWeb.Endpoint}
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options
     opts = [strategy: :one_for_one, name: Perplexica.Supervisor]
-    Supervisor.start_link(children, opts)
+
+    case Supervisor.start_link(children, opts) do
+      {:ok, _pid} = result ->
+        # Warm the search-mode-config cache after the Repo is alive. Any
+        # DB error inside warm_cache/0 falls back to hardcoded defaults.
+        Perplexica.Search.ModeConfig.warm_cache()
+        result
+
+      other ->
+        other
+    end
   end
 
   # Tell Phoenix to update the endpoint configuration
