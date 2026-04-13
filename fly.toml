@@ -1,4 +1,4 @@
-app = 'perplexica-app'
+app = 'perplexica-search'
 primary_region = 'sjc'
 kill_signal = 'SIGTERM'
 
@@ -9,12 +9,13 @@ kill_signal = 'SIGTERM'
   strategy = 'rolling'
 
 [env]
-  PORT = '8910'
-  NODE_ENV = 'production'
-  DATA_DIR = '/app/data'
+  PORT = '8080'
+  PHX_SERVER = 'true'
+  ECTO_IPV6 = 'true'
+  PHX_HOST = 'perplexica-search.fly.dev'
 
 [http_service]
-  internal_port = 8910
+  internal_port = 8080
   force_https = true
   auto_stop_machines = 'stop'
   auto_start_machines = true
@@ -23,21 +24,17 @@ kill_signal = 'SIGTERM'
 
   [http_service.concurrency]
     type = 'connections'
-    hard_limit = 500
-    soft_limit = 400
+    hard_limit = 1000
+    soft_limit = 1000
 
 [[http_service.checks]]
   interval = '30s'
   timeout = '5s'
   grace_period = '15s'
   method = 'GET'
-  path = '/api/health'
+  path = '/health'
 
 [[vm]]
   cpu_kind = 'shared'
   cpus = 1
-  memory_mb = 512
-
-[mounts]
-  source = 'perplexica_data'
-  destination = '/app/data'
+  memory_mb = 1024

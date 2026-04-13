@@ -1,32 +1,51 @@
-FROM node:20-alpine AS builder
-RUN apk add --no-cache python3 make g++
+# ── Build Stage: Redwood Frontend ──────────────────────────────────
+FROM node:20-alpine AS frontend-builder
 WORKDIR /app
-COPY package*.json ./
-RUN npm ci
-COPY . .
-RUN npx next build
+RUN corepack enable && corepack prepare yarn@4.6.0 --activate
+COPY redwood ./redwood
+WORKDIR /app/redwood
+# Build both api and web to ensure types are generated and build passes
+RUN yarn install && yarn rw build
+# Note: we only need the web/dist for Phoenix to serve
 
-FROM node:20-alpine AS runner
+# ── Build Stage: Phoenix Backend ───────────────────────────────────
+FROM elixir:1.17-slim AS backend-builder
+RUN apt-get update -y && apt-get install -y build-essential git && apt-get clean
 WORKDIR /app
-RUN addgroup --system --gid 1001 nodejs && adduser --system --uid 1001 nextjs
+RUN mix local.hex --force && mix local.rebar --force
+ENV MIX_ENV="prod"
+COPY phoenix/mix.exs phoenix/mix.lock ./
+RUN mix deps.get --only $MIX_ENV && mkdir config
+COPY phoenix/config/config.exs phoenix/config/${MIX_ENV}.exs phoenix/config/runtime.exs config/
+RUN mix deps.compile
+COPY phoenix/priv priv
+COPY phoenix/lib lib
+COPY phoenix/rel rel
+# Copy built frontend to Phoenix priv/static
+COPY --from=frontend-builder /app/redwood/web/dist/ priv/static/
+RUN mix compile
+RUN mix release
 
-RUN apk add --no-cache curl
+# ── Runtime Stage ──────────────────────────────────────────────────
+FROM debian:bookworm-slim
+RUN apt-get update -y && \
+  apt-get install -y libstdc++6 openssl libncurses5 locales ca-certificates curl && \
+  apt-get clean && rm -f /var/lib/apt/lists/*_*
+RUN sed -i '/en_US.UTF-8/s/^# //g' /etc/locale.gen && locale-gen
+ENV LANG en_US.UTF-8
+ENV LANGUAGE en_US:en
+ENV LC_ALL en_US.UTF-8
+WORKDIR /app
+RUN chown nobody /app
+ENV MIX_ENV="prod"
+COPY --from=backend-builder --chown=nobody:root /app/_build/${MIX_ENV}/rel/perplexica ./
 
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
-COPY --from=builder /app/drizzle ./drizzle
+USER root
+RUN chmod +x /app/bin/start.sh
+USER nobody
 
-RUN mkdir -p /app/data && chown -R nextjs:nodejs /app/data
-
-USER nextjs
-EXPOSE 8910
-ENV PORT=8910
-ENV HOSTNAME="0.0.0.0"
-ENV DATA_DIR=/app/data
-ENV NODE_ENV=production
-
-HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
-  CMD curl -f http://localhost:8910/api/health || exit 1
-
-CMD ["node", "server.js"]
+# Expose Phoenix port
+EXPOSE 8080
+ENV PORT=8080
+ENV PHX_SERVER=true
+CMD ["/app/bin/start.sh"]

@@ -2,8 +2,6 @@ node_modules
 .next
 .git
 searxng/searxng-src
-phoenix
-redwood
 zig
 openspec
 docs
