@@ -12,7 +12,7 @@
 [![Version](https://img.shields.io/badge/version-1.0.0-blue?style=flat-square)]()
 [![Lighthouse](https://img.shields.io/badge/Lighthouse-100%2F100%2F100-brightgreen?style=flat-square)]()
 
-[Live Demo](https://perplexica-production-41f5.up.railway.app/) — hosted on Railway
+[Live Demo](https://perplexica.stussysenik.com) — hosted on Hetzner
 
 </div>
 
@@ -133,6 +133,21 @@ Browser → /auth/github → GitHub OAuth → /auth/github/callback
 | `PHX_HOST` | Yes (prod) | The production hostname (e.g. `your-app.up.railway.app`) |
 
 > **GitHub OAuth App setup**: Register at github.com/settings/developers. Set "Authorization callback URL" to `https://your-domain/auth/github/callback`. Homepage URL can be anything.
+
+---
+
+## Known Issues
+
+### Data Migration from Railway (v1.0.0 → Hetzner)
+
+The v1.0.0 deployment ran on Railway with a managed PostgreSQL. During migration to the Hetzner Coolify stack, user data (chats, messages, search history) was **not migrated** — the Hetzner database started fresh.
+
+**Impact:** Users who signed in and used the app on Railway will see no history after the migration.
+
+**Resolution path:**
+1. Retrieve the old `DATABASE_URL` from the Railway project variables
+2. `pg_dump` the Railway database
+3. `pg_restore` into the Hetzner pgvector instance (`s1w2j8oxy05xdomwpyf8m2oc`)
 
 ---
 
