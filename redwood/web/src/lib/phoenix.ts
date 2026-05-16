@@ -12,7 +12,9 @@ const getPhoenixUrl = (): string => {
   if (typeof window !== 'undefined') {
     return (window as any).__PHOENIX_URL__ || process.env.PHOENIX_URL || ''
   }
-  return process.env.PHOENIX_URL || 'http://localhost:4000'
+  // SSR path — only used during server-side rendering. Fall back to
+  // empty string so API calls use same-origin relative URLs.
+  return process.env.PHOENIX_URL || ''
 }
 
 export const phoenixUrl = getPhoenixUrl()
@@ -27,13 +29,21 @@ export const phoenixGql = async (query: string, variables?: Record<string, any>)
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ query, variables }),
+  }).catch((err) => {
+    console.error('[phoenixGql] network error:', err, 'url:', url)
+    throw err
   })
   if (res.status === 401 || res.status === 403) {
+    const msg = res.status === 401 ? 'unauthenticated' : 'forbidden'
+    console.error('[phoenixGql] auth error:', msg, 'url:', url)
     window.dispatchEvent(new CustomEvent('fyoa:session-revoked'))
-    throw new Error(res.status === 401 ? 'unauthenticated' : 'forbidden')
+    throw new Error(msg)
   }
   const data = await res.json()
-  if (data.errors) throw new Error(data.errors[0].message)
+  if (data.errors) {
+    console.error('[phoenixGql] graphql errors:', data.errors, 'url:', url)
+    throw new Error(data.errors[0].message)
+  }
   return data
 }
 

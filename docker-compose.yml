@@ -1,27 +1,49 @@
+# Perplexica (Phoenix + RedwoodJS) production deployment
+#
+# Environment variables marked REQUIRED must be set before starting.
+# For Coolify, set these in the service's Environment Variables panel.
+# For local docker compose, copy .env.local to .env and fill in values.
+#
+# Auth: AUTH_BYPASS=true disables GitHub OAuth for quick self-hosted
+# access. Remove or set to false once you configure GitHub OAuth below.
+
 services:
   app:
     build:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "8910:8910"
+      - "8080:8080"
     environment:
-      - NODE_ENV=production
-      - DATA_DIR=/app/data
-      - NVIDIA_NIM_API_KEY=${NVIDIA_NIM_API_KEY}
-      - BRAVE_SEARCH_API_KEY=${BRAVE_SEARCH_API_KEY}
-      - GLM_API_KEY=${GLM_API_KEY}
-      - GLM_BASE_URL=${GLM_API_KEY:+https://api.z.ai/api/coding/paas/v4}
-    volumes:
-      - perplexica-data:/app/data
+      # ── REQUIRED: Database ──────────────────────────────────────────
+      DATABASE_URL: ${DATABASE_URL:-${SUPABASE_CONNECTION_STRING}}
+      POOL_SIZE: ${POOL_SIZE:-10}
+
+      # ── REQUIRED: Secrets ───────────────────────────────────────────
+      SECRET_KEY_BASE: ${SECRET_KEY_BASE:?SECRET_KEY_BASE is required}
+      PHX_HOST: ${PHX_HOST:-localhost}
+
+      # ── REQUIRED if AUTH_BYPASS=false: GitHub OAuth ─────────────────
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-}
+      GITHUB_ALLOWLIST: ${GITHUB_ALLOWLIST:-}
+
+      # ── Auth bypass — set true to skip GitHub OAuth ─────────────────
+      AUTH_BYPASS: ${AUTH_BYPASS:-true}
+
+      # ── CORS (comma-separated origins, defaults handle same-origin) ─
+      CORS_ORIGINS: ${CORS_ORIGINS:-}
+
+      # ── API keys for inference and search ───────────────────────────
+      NVIDIA_NIM_API_KEY: ${NVIDIA_NIM_API_KEY:-}
+      BRAVE_SEARCH_API_KEY: ${BRAVE_SEARCH_API_KEY:-}
+      GLM_API_KEY: ${GLM_API_KEY:-}
+      GLM_BASE_URL: ${GLM_BASE_URL:-https://api.z.ai/api/coding/paas/v4}
+      EXA_AI_API_KEY: ${EXA_AI_API_KEY:-}
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8910/api/chats"]
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 15s
-
-volumes:
-  perplexica-data:
-    driver: local
+      start_period: 30s

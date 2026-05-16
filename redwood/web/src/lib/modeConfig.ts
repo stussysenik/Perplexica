@@ -65,6 +65,7 @@ export function useModeConfigs() {
       setConfigs((res.data?.modeConfigs ?? []) as ModeConfig[])
       setError(null)
     } catch (err) {
+      console.error('[useModeConfigs] failed to load mode configs:', err)
       setError(err instanceof Error ? err : new Error(String(err)))
     } finally {
       setLoading(false)
