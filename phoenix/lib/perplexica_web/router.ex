@@ -56,6 +56,10 @@ defmodule PerplexicaWeb.Router do
 
     forward "/graphql", Absinthe.Plug, schema: PerplexicaWeb.Schema
 
+    # SSE streaming endpoint for search events — alternative to WebSocket
+    # subscriptions when WebSocket connections fail (proxy/firewall issues).
+    get "/sse/search/:session_id", PerplexicaWeb.SseController, :search
+
     if Mix.env() == :dev do
       forward "/graphiql", Absinthe.Plug.GraphiQL,
         schema: PerplexicaWeb.Schema,
