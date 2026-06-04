@@ -1,49 +1,41 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Discover Page', () => {
-  test('renders the Discover page heading and topic tabs', async ({ page }) => {
+  test('renders the Discover page heading and category tabs', async ({ page }) => {
     await page.goto('/discover');
 
     await expect(page.getByRole('heading', { name: 'Discover' })).toBeVisible();
 
-    await expect(page.getByText('Tech & Science')).toBeVisible();
-    await expect(page.getByText('Finance')).toBeVisible();
-    await expect(page.getByText('Art & Culture')).toBeVisible();
-    await expect(page.getByText('Sports')).toBeVisible();
-    await expect(page.getByText('Entertainment')).toBeVisible();
+    // Tabs are role="tab": Research / Analysis / Discovery.
+    await expect(page.getByRole('tab', { name: 'Research' })).toBeVisible();
+    await expect(page.getByRole('tab', { name: 'Analysis' })).toBeVisible();
+    await expect(page.getByRole('tab', { name: 'Discovery' })).toBeVisible();
   });
 
-  test('clicking a different topic switches the active tab', async ({ page }) => {
+  test('clicking a different tab switches the active selection', async ({ page }) => {
     await page.goto('/discover');
 
-    const financeTab = page.getByText('Finance');
-    await financeTab.click();
+    const research = page.getByRole('tab', { name: 'Research' });
+    const analysis = page.getByRole('tab', { name: 'Analysis' });
 
-    await expect(financeTab).toBeVisible();
+    await expect(research).toHaveAttribute('aria-selected', 'true');
+
+    await analysis.click();
+    await expect(analysis).toHaveAttribute('aria-selected', 'true');
+    await expect(research).toHaveAttribute('aria-selected', 'false');
   });
 
-  test('shows loading spinner or articles after navigation', async ({ page }) => {
+  test('topic suggestions render and route to a search', async ({ page }) => {
     await page.goto('/discover');
-    await page.waitForTimeout(3000);
 
-    const spinner = page.locator('.animate-spin');
-    const articles = page.locator('a[target="_blank"]');
-    const spinnerVisible = await spinner.isVisible().catch(() => false);
-    const articleCount = await articles.count();
+    // Each suggestion is a button that navigates to the home search with ?q=.
+    // The default Research tab leads with this prompt.
+    const suggestion = page.getByRole('button', {
+      name: 'How does quantum entanglement work?',
+    });
+    await expect(suggestion).toBeVisible({ timeout: 5000 });
 
-    expect(spinnerVisible || articleCount >= 0).toBe(true);
-  });
-
-  test('article cards have proper link structure', async ({ page }) => {
-    await page.goto('/discover');
-    await page.waitForTimeout(3000);
-
-    const cards = page.locator('a[target="_blank"]');
-    const count = await cards.count();
-
-    if (count > 0) {
-      const firstCard = cards.first();
-      await expect(firstCard).toBeVisible();
-    }
+    await suggestion.click();
+    await expect(page).toHaveURL(/\/\?q=/);
   });
 });

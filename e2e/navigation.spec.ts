@@ -4,7 +4,7 @@ test.describe('Navigation Flows', () => {
   test('should navigate between Home, Discover, and Library', async ({ page }) => {
     await page.goto('/');
 
-    await expect(page).toHaveTitle(/Perplexica/i);
+    await expect(page).toHaveTitle(/Find Your Own Answer/i);
 
     const chatInput = page.getByPlaceholder('Ask anything...');
     await expect(chatInput).toBeVisible();
@@ -21,11 +21,10 @@ test.describe('Navigation Flows', () => {
   test('should navigate back to home from any page', async ({ page }) => {
     await page.goto('/discover');
 
-    const homeLink = page.getByRole('link', { name: 'Home' }).first();
-    if (await homeLink.isVisible()) {
-      await homeLink.click();
-      await expect(page.getByRole('heading', { name: 'Perplexica' })).toBeVisible();
-    }
+    // The "Search" nav item points at "/" — clicking it returns home.
+    await page.getByRole('link', { name: 'Search' }).first().click();
+    await expect(page).toHaveURL(/\/$/);
+    await expect(page.getByPlaceholder('Ask anything...')).toBeVisible();
   });
 
   test('new chat button navigates to home', async ({ page }) => {

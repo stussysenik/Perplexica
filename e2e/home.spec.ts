@@ -52,7 +52,7 @@ test.describe('Home Page — empty state', () => {
 
   test('hero is centered on mobile viewport', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 812 });
-    await page.goto(BASE);
+    await page.goto('/');
 
     const hero = page.locator('h1');
     await expect(hero).toBeVisible();
@@ -64,32 +64,35 @@ test.describe('Home Page — empty state', () => {
   });
 
   test('skip-to-content link exists for accessibility', async ({ page }) => {
+    // Wait for the app shell to mount (the auth gate resolves first on slower
+    // engines), then assert the skip link is present. toHaveCount retries.
+    await expect(page.getByPlaceholder('Ask anything...')).toBeVisible();
     const skip = page.locator('a', { hasText: 'Skip to content' });
-    await expect(skip.count()).resolves.toBeGreaterThanOrEqual(1);
+    await expect(skip).toHaveCount(1);
   });
 });
 
 // ---------------------------------------------------------------------------
-// Navigation — "Perplexica" logo link
+// Navigation — "FYOA" brand link returns home
 // ---------------------------------------------------------------------------
-test.describe('Navigation — Perplexica logo returns home', () => {
-  test('desktop sidebar logo is a link that navigates to /', async ({ page }) => {
+test.describe('Navigation — FYOA brand returns home', () => {
+  test('desktop sidebar brand is a link that navigates to /', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto('/discover');
 
-    // Click the sidebar Perplexica link
-    const logo = page.locator('aside a', { hasText: 'Perplexica' });
+    // Click the sidebar FYOA brand link
+    const logo = page.locator('aside a', { hasText: 'FYOA' });
     await expect(logo).toBeVisible();
     await logo.click();
     await expect(page).toHaveURL(/\/$/);
   });
 
-  test('mobile header logo is a link that navigates to /', async ({ page }) => {
+  test('mobile header brand is a link that navigates to /', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 812 });
     await page.goto('/discover');
 
-    // Mobile header shows the logo link
-    const logo = page.locator('.lg\\:hidden a', { hasText: 'Perplexica' });
+    // Mobile header shows the FYOA brand link
+    const logo = page.locator('.lg\\:hidden a', { hasText: 'FYOA' });
     await expect(logo).toBeVisible();
     await logo.click();
     await expect(page).toHaveURL(/\/$/);
@@ -127,8 +130,12 @@ test.describe('Search flow', () => {
   });
 
   test('pressing / focuses the search input from anywhere on the page', async ({ page }) => {
+    // Wait until the input is mounted — the "/" shortcut handler attaches with
+    // it, so pressing before mount is a no-op (hydration race).
+    const input = page.getByPlaceholder('Ask anything...');
+    await expect(input).toBeVisible();
     await page.keyboard.press('/');
-    await expect(page.getByPlaceholder('Ask anything...')).toBeFocused();
+    await expect(input).toBeFocused();
   });
 
   test('mode is passed along with the search request', async ({ page }) => {
@@ -140,12 +147,14 @@ test.describe('Search flow', () => {
     await input.fill('test query');
 
     // Intercept the GraphQL mutation to verify optimizationMode is "quality"
+    // The search fires a StartSearch GraphQL mutation at Phoenix. The mode is
+    // passed as the `optimizationMode` *variable*, not inlined in the query.
     const [request] = await Promise.all([
       page.waitForRequest(req => req.url().includes('/api/graphql') && req.method() === 'POST'),
       input.press('Enter'),
     ]);
     const body = JSON.parse(request.postData() ?? '{}');
-    expect(body.query).toContain('"quality"');
+    expect(body.variables?.optimizationMode).toBe('quality');
   });
 });
 
@@ -158,11 +167,11 @@ test.describe('VerifiedBadge interactions', () => {
   });
 
   test('lightbulb badge is visible on empty state', async ({ page }) => {
-    await expect(page.getByRole('button', { name: 'AI answer confidence indicator' })).toBeVisible();
+    await expect(page.getByRole('button', { name: /verified answer machine/i })).toBeVisible();
   });
 
   test('lightbulb icon fills on hover', async ({ page }) => {
-    const badge = page.getByRole('button', { name: 'AI answer confidence indicator' });
+    const badge = page.getByRole('button', { name: /verified answer machine/i });
     await badge.hover();
     // After hover the filled icon (LightbulbFilament) should appear
     // We verify the text label changes to accent color (opacity > 0)

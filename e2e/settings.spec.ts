@@ -46,12 +46,30 @@ test.describe('Settings page', () => {
 
   test('changing default mode persists to localStorage and applies on home', async ({ page }) => {
     await page.goto('/settings')
-    await page.getByRole('radio', { name: /quality/i }).click()
+    const qualityRadio = page.getByRole('radio', { name: /quality/i })
+    await qualityRadio.click()
+    // Selection reflects immediately; persistence runs in a useEffect, so poll
+    // localStorage rather than reading it on the same tick as the click.
+    await expect(qualityRadio).toHaveAttribute('aria-checked', 'true')
 
-    const stored = await page.evaluate(() =>
-      window.localStorage.getItem('perplexica.settings.v1')
-    )
-    expect(JSON.parse(stored!).defaultMode).toBe('quality')
+    await expect
+      .poll(async () =>
+        page.evaluate(() => {
+          const blob = window.localStorage.getItem('perplexica.settings.v1')
+          return blob ? JSON.parse(blob).defaultMode : null
+        }),
+      )
+      .toBe('quality')
+
+    // The beforeEach init script wipes settings on EVERY navigation (it runs
+    // per-document), which would clear our choice before home reads it. Re-seed
+    // the persisted default so we can verify home applies it on a fresh load.
+    await page.addInitScript(() => {
+      window.localStorage.setItem(
+        'perplexica.settings.v1',
+        JSON.stringify({ defaultMode: 'quality', theme: 'system', version: 1 }),
+      )
+    })
 
     await page.goto('/')
     await expect(page.getByRole('button', { name: /quality/i })).toHaveClass(/border-b-2/)

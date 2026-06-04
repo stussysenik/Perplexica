@@ -59,7 +59,8 @@ test.describe('Single-Click Navigation', () => {
   test('navigates to Home in one click from Library', async ({ page }) => {
     await page.goto('/library');
 
-    const homeLink = page.getByRole('link', { name: 'Home' }).first();
+    // The "Search" nav item points at "/" — it is the single-click route home.
+    const homeLink = page.getByRole('link', { name: 'Search' }).first();
     await expect(homeLink).toBeVisible();
 
     await homeLink.click();
@@ -73,13 +74,14 @@ test.describe('Single-Click Navigation', () => {
   test('Library page loads without requiring a page refresh', async ({
     page,
   }) => {
-    const responses: string[] = [];
-
-    page.on('response', (response) => {
-      if (response.url().includes('/api/chats')) {
-        responses.push(response.url());
-      }
-    });
+    // Library loads chats via a GraphQL `chats` query against Phoenix
+    // (POST /api/graphql), not a REST /api/chats endpoint. The "Library"
+    // heading is static and paints before that response lands, so wait on the
+    // response itself to prove data loads on first paint (no manual refresh).
+    const chatsResponse = page.waitForResponse(
+      (r) => r.url().includes('/api/graphql') && r.request().method() === 'POST',
+      { timeout: 8000 },
+    );
 
     await page.goto('/library');
 
@@ -87,14 +89,10 @@ test.describe('Single-Click Navigation', () => {
       page.getByRole('heading', { name: 'Library' }),
     ).toBeVisible({ timeout: 5000 });
 
-    expect(responses.length).toBeGreaterThanOrEqual(1);
-
-    const loadingIndicators = page.locator('[role="status"]');
-    const loadingCount = await loadingIndicators.count();
-
-    if (loadingCount > 0) {
-      await expect(loadingIndicators.first()).toBeHidden({ timeout: 10000 });
-    }
+    // Data arrives on first paint — the chats query resolved without a manual
+    // reload. (`[role="status"]` is reused for a persistent notice banner on
+    // this page, not a transient loading spinner, so it isn't asserted here.)
+    expect((await chatsResponse).ok()).toBe(true);
   });
 
   test('Library page persists after reload', async ({ page }) => {
@@ -129,7 +127,7 @@ test.describe('Single-Click Navigation', () => {
       page.getByRole('heading', { name: 'Discover' }),
     ).toBeVisible({ timeout: 5000 });
 
-    await page.getByRole('link', { name: 'Home' }).first().click();
+    await page.getByRole('link', { name: 'Search' }).first().click();
     await expect(chatInput).toBeVisible({ timeout: 5000 });
   });
 

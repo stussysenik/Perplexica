@@ -1,0 +1,25 @@
+# Maestro Web · Navigation
+# Walks the primary routes via the sidebar/bottom nav and asserts each page's
+# real <h1>. Brand label is "FYOA"; the home nav item is labelled "Search".
+url: http://localhost:8910
+---
+- launchApp
+- assertVisible: "find your own answer"
+
+# Discover
+- tapOn: "Discover"
+- assertVisible: "Discover"
+- assertVisible: "Research"      # default category tab
+
+# Library
+- tapOn: "Library"
+- assertVisible: "Library"
+
+# Settings (gear)
+- tapOn: "Settings"
+- assertVisible: "Settings"
+- assertVisible: "Appearance"
+
+# Back to home via the Search nav item (points at "/")
+- tapOn: "Search"
+- assertVisible: "find your own answer"

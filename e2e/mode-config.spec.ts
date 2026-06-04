@@ -71,9 +71,14 @@ test.describe('Search Modes card', () => {
   test('renders three rows with default values', async ({ page }) => {
     await page.goto('/settings')
     await expect(page.getByRole('heading', { name: /search modes/i })).toBeVisible()
-    await expect(page.getByText('Speed', { exact: true })).toBeVisible()
-    await expect(page.getByText('Balanced', { exact: true })).toBeVisible()
-    await expect(page.getByText('Quality', { exact: true })).toBeVisible()
+
+    // Scope to the Search Modes card — "Speed/Balanced/Quality" also appear in
+    // the separate "Search defaults" radio group, so an unscoped getByText is
+    // ambiguous under strict mode.
+    const card = page.locator('section').filter({ hasText: 'Search Modes' })
+    await expect(card.getByText('Speed', { exact: true })).toBeVisible()
+    await expect(card.getByText('Balanced', { exact: true })).toBeVisible()
+    await expect(card.getByText('Quality', { exact: true })).toBeVisible()
   })
 
   test('debounces save on iteration input change', async ({ page }) => {

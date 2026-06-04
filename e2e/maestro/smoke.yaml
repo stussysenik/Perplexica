@@ -1,0 +1,13 @@
+# Maestro Web · Smoke
+# `url:` flags this as a web flow, so Maestro drives Chrome against the app.
+# Asserts real DOM text (brand + nav labels), NOT placeholder attributes.
+url: http://localhost:8910
+---
+- launchApp
+# Brand + primary navigation are always present in the app shell.
+- assertVisible: "FYOA"
+- assertVisible: "Search"
+- assertVisible: "Discover"
+- assertVisible: "Library"
+# The hero wordmark on the empty home state.
+- assertVisible: "find your own answer"

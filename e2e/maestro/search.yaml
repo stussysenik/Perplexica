@@ -1,0 +1,22 @@
+# Maestro Web · Live search journey (SLOW — hits NIM)
+# Drives a real query through Phoenix → NIM (qwen/qwen3.5-397b-a17b) and waits
+# for a cited answer. This is the end-to-end happy path; it depends on live API
+# latency, so it carries a long wait and is kept out of the fast smoke set.
+url: http://localhost:8910
+---
+- launchApp
+# The search box is a textarea with aria-label "Search query".
+- tapOn: "Search query"
+- inputText: "What is the Elixir actor model and how does it relate to the BEAM?"
+- takeScreenshot: search-01-typed
+- pressKey: Enter
+# The query echoes back as the answer heading.
+- extendedWaitUntil:
+    visible: "Elixir actor model"
+    timeout: 15000
+- takeScreenshot: search-02-submitted
+# Sources panel appears once the research stage completes.
+- extendedWaitUntil:
+    visible: "Sources"
+    timeout: 160000
+- takeScreenshot: search-03-answered

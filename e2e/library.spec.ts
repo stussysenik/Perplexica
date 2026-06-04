@@ -14,13 +14,15 @@ test.describe('Library Page', () => {
     await expect(page.getByRole('button', { name: 'Bookmarks' })).toBeVisible();
   });
 
-  test('shows empty state when no chats exist', async ({ page }) => {
+  test('shows either chat rows or the empty state', async ({ page }) => {
     await page.goto('/library');
     await page.waitForTimeout(2000);
 
+    // Each chat row carries a "Move to trash" action button; absent any chat,
+    // the empty state is shown instead. Exactly one of these must be true.
     const emptyState = page.getByText('No chats yet');
-    const chatItems = page.locator('[class*="border-l-[var(--border-accent)]"]');
-    const chatCount = await chatItems.count();
+    const trashButtons = page.getByRole('button', { name: 'Move to trash' });
+    const chatCount = await trashButtons.count();
 
     if (chatCount === 0) {
       await expect(emptyState).toBeVisible();
@@ -29,15 +31,15 @@ test.describe('Library Page', () => {
     }
   });
 
-  test('delete button exists on chat items', async ({ page }) => {
+  test('chat rows expose a move-to-trash action', async ({ page }) => {
     await page.goto('/library');
     await page.waitForTimeout(2000);
 
-    const deleteButtons = page.getByText('Delete');
-    const count = await deleteButtons.count();
+    const trashButtons = page.getByRole('button', { name: 'Move to trash' });
+    const count = await trashButtons.count();
 
     if (count > 0) {
-      await expect(deleteButtons.first()).toBeVisible();
+      await expect(trashButtons.first()).toBeVisible();
     }
   });
 });

@@ -56,15 +56,24 @@ test.describe('Accessibility', () => {
 });
 
 test.describe('Spacing & Layout', () => {
-  test('main content has sufficient padding from edges', async ({ page }) => {
+  test('main content is inset from the edges', async ({ page }) => {
     await page.goto('/');
 
     const mainContent = page.locator('#main-content');
-    if (await mainContent.isVisible()) {
-      const box = await mainContent.boundingBox();
-      if (box) {
-        expect(box.x).toBeGreaterThanOrEqual(16);
-      }
+    await expect(mainContent).toBeVisible();
+    const box = await mainContent.boundingBox();
+    if (!box) return;
+
+    const vw = page.viewportSize()?.width ?? 0;
+    if (vw >= 1024) {
+      // Desktop: the 240px sidebar pushes the main region right.
+      expect(box.x).toBeGreaterThanOrEqual(16);
+    } else {
+      // Mobile: the main region spans full width, so spacing comes from inner
+      // padding. Assert the inner content (the search input) is inset.
+      const input = page.getByPlaceholder('Ask anything...');
+      const inputBox = await input.boundingBox();
+      if (inputBox) expect(inputBox.x).toBeGreaterThanOrEqual(8);
     }
   });
 
