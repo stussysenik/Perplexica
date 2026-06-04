@@ -5,13 +5,13 @@ defmodule Perplexica.Models.NimProvider do
 
   ## Supported Models
 
-  Chat:
-  - `kimi-k2-instruct` (default, Moonshot AI via NIM)
-  - `meta/llama-3.3-70b-instruct`
-  - `deepseek-ai/deepseek-v3.2`
-  - `qwen/qwen3.5-397b-instruct`
-  - `meta/llama-3.1-405b-instruct`
-  - `mistralai/mistral-large-3-675b-instruct`
+  Chat (verified against the live NIM catalog 2026-06):
+  - `meta/llama-3.3-70b-instruct` (default — fast, reliable)
+  - `moonshotai/kimi-k2.6` (successor to the EOL `kimi-k2-instruct`)
+  - `deepseek-ai/deepseek-v4-flash`
+  - `qwen/qwen3.5-397b-a17b`
+  - `openai/gpt-oss-120b`
+  - `mistralai/mistral-large-3-675b-instruct-2512`
 
   Embedding:
   - `nvidia/nv-embedqa-e5-v5` (1024-dim, asymmetric input_type)
@@ -28,7 +28,11 @@ defmodule Perplexica.Models.NimProvider do
 
   alias Perplexica.Models.HttpClient
 
-  @default_model "moonshotai/kimi-k2-instruct"
+  # `moonshotai/kimi-k2-instruct` reached end-of-life on 2026-05-12 and now
+  # returns HTTP 410, which opened the NIM circuit breaker and made every
+  # search fail at answer generation. Default to a model that is confirmed
+  # live in the NIM catalog. (Verified with a real completion 2026-06.)
+  @default_model "meta/llama-3.3-70b-instruct"
   @default_embedding_model "nvidia/nv-embedqa-e5-v5"
 
   # ── Chat Models ──────────────────────────────────────────────────
@@ -36,12 +40,12 @@ defmodule Perplexica.Models.NimProvider do
   @impl true
   def chat_models do
     [
-      %{key: "moonshotai/kimi-k2-instruct", name: "Kimi K2 Instruct"},
       %{key: "meta/llama-3.3-70b-instruct", name: "Llama 3.3 70B"},
-      %{key: "deepseek-ai/deepseek-v3.2", name: "DeepSeek V3.2"},
-      %{key: "qwen/qwen3.5-397b-instruct", name: "Qwen 3.5 397B"},
-      %{key: "meta/llama-3.1-405b-instruct", name: "Llama 3.1 405B"},
-      %{key: "mistralai/mistral-large-3-675b-instruct", name: "Mistral Large 3 675B"}
+      %{key: "moonshotai/kimi-k2.6", name: "Kimi K2.6"},
+      %{key: "deepseek-ai/deepseek-v4-flash", name: "DeepSeek V4 Flash"},
+      %{key: "qwen/qwen3.5-397b-a17b", name: "Qwen 3.5 397B"},
+      %{key: "openai/gpt-oss-120b", name: "GPT-OSS 120B"},
+      %{key: "mistralai/mistral-large-3-675b-instruct-2512", name: "Mistral Large 3 675B"}
     ]
   end
 

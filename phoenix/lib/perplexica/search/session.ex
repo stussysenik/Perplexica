@@ -25,6 +25,7 @@ defmodule Perplexica.Search.Session do
 
   alias Perplexica.Search.{Classifier, Researcher}
   alias Perplexica.Models.Registry
+  alias Perplexica.AI
   alias Perplexica.{Repo, Message}
 
   @ttl_ms 30 * 60 * 1_000
@@ -246,21 +247,9 @@ defmodule Perplexica.Search.Session do
 
     system_instructions = state.config[:system_instructions] || "None"
 
-    system_prompt = """
-    You are Perplexica, an AI search assistant. Answer the user's query using the provided search results.
-
-    User's custom instructions: #{system_instructions}
-
-    Rules:
-    - Cite sources using [1], [2], etc. matching the order of provided sources
-    - Be comprehensive but concise
-    - If sources conflict, mention the discrepancy
-    - If you're unsure, say so rather than guessing
-    - Use markdown formatting for readability
-
-    Search results:
-    #{context}
-    """
+    # Prompt + model + generation params all come from the centralized
+    # Perplexica.AI contract so the answer voice stays consistent everywhere.
+    system_prompt = AI.answer_system_prompt(context, system_instructions)
 
     messages = [
       %{role: "system", content: system_prompt}
@@ -277,8 +266,9 @@ defmodule Perplexica.Search.Session do
 
     messages = messages ++ history_messages ++ [%{role: "user", content: state.query}]
 
-    # Generate the answer (non-streaming for reliability)
-    case Registry.chat_completion(messages, %{max_tokens: 4096, temperature: 0.7}) do
+    # Generate the answer (non-streaming for reliability). Options — including
+    # the max-quality model — come from the centralized Perplexica.AI layer.
+    case Registry.chat_completion(messages, AI.answer_opts()) do
       {:ok, _key, {:ok, response}} ->
         answer_text = response.content || ""
 

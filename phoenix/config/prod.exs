@@ -7,7 +7,17 @@ config :perplexica, PerplexicaWeb.Endpoint,
   force_ssl: [
     rewrite_on: [:x_forwarded_proto],
     exclude: [
-      paths: ["/health"],
+      # `/health` is hit by the container healthcheck over plain HTTP.
+      #
+      # `/socket/websocket` must be excluded too: Coolify's Traefik proxy does
+      # NOT forward `X-Forwarded-Proto: https` on WebSocket *upgrade* requests
+      # (it does for normal requests), so without this exclusion force_ssl
+      # 301-redirects every WS handshake to https — which a browser cannot
+      # follow mid-upgrade, killing Absinthe subscriptions and forcing the
+      # client into its polling fallback. TLS is already terminated at the
+      # edge and the Traefik→Phoenix hop is a private network, so skipping the
+      # redundant redirect here is safe.
+      paths: ["/health", "/socket/websocket"],
       hosts: ["localhost", "127.0.0.1"]
     ]
   ]
