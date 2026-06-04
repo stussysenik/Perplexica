@@ -57,7 +57,8 @@ const VerifiedBadge = () => {
   return (
     <button
       type="button"
-      aria-label="AI answer confidence indicator"
+      // Accessible name comes from the visible "verified answer machine" text
+      // so it satisfies WCAG 2.5.3 (label-in-name); no mismatched aria-label.
       onMouseEnter={handleEnter}
       onMouseLeave={handleLeave}
       onFocus={handleEnter}

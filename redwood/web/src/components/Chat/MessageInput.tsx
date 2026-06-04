@@ -303,7 +303,7 @@ const MessageInput = ({ onSend, loading, mode, onModeChange, transparent }: Prop
             {/* Feature Tag: System Time hidden */}
             {false && <SystemTime />}
             
-            <p className="hidden md:block text-[10px] text-[var(--text-muted)] normal-case tracking-wide opacity-50">
+            <p className="hidden md:block text-[10px] text-[var(--text-muted)] normal-case tracking-wide">
               Press <kbd className="px-1.5 py-0.5 border border-[var(--border-default)] rounded-[3px] text-[9px] font-mono bg-[var(--surface-secondary)] text-[var(--text-primary)]">/</kbd> to focus · Shift+Enter for new line
             </p>
           </div>

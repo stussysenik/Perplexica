@@ -33,7 +33,7 @@ body {
   --border-muted: #ccc;
   --text-primary: #111;
   --text-secondary: #555;
-  --text-muted: #888;
+  --text-muted: #6b6b6b;   /* 5.3:1 on #fff — WCAG AA for normal text */
   --text-accent: #26e;
   --text-highlight: #3f0;
   --surface-primary: #fff;
