@@ -26,6 +26,8 @@ defmodule Perplexica.SearchSources.Brave do
 
   require Logger
 
+  alias Perplexica.Security.UrlGuard
+
   @web_search_url "https://api.search.brave.com/res/v1/web/search"
   @news_search_url "https://api.search.brave.com/res/v1/news/search"
   @rate_limit_key "brave_search"
@@ -57,7 +59,10 @@ defmodule Perplexica.SearchSources.Brave do
           {:ok, web_results ++ news_results}
 
         {:ok, %{status_code: status, body: body}} ->
-          Logger.warning("[BraveSearch] Web search failed: #{status} #{String.slice(body, 0, 200)}")
+          Logger.warning(
+            "[BraveSearch] Web search failed: #{status} #{String.slice(body, 0, 200)}"
+          )
+
           {:error, %{status: status, body: body}}
 
         {:error, %HTTPoison.Error{reason: reason}} ->
@@ -108,7 +113,7 @@ defmodule Perplexica.SearchSources.Brave do
   def scrape_url(url, opts \\ []) do
     timeout = Keyword.get(opts, :timeout, 10_000)
 
-    case HTTPoison.get(url, [{"User-Agent", "Perplexica/1.0"}], recv_timeout: timeout, follow_redirect: true, max_redirect: 3) do
+    case safe_get(url, timeout, 3) do
       {:ok, %{status_code: status, body: body}} when status in 200..299 ->
         text = extract_text_from_html(body)
         {:ok, %{url: url, content: text}}
@@ -118,6 +123,55 @@ defmodule Perplexica.SearchSources.Brave do
 
       {:error, %HTTPoison.Error{reason: reason}} ->
         {:error, %{reason: reason, url: url}}
+
+      {:error, reason} ->
+        {:error, %{reason: reason, url: url}}
+    end
+  end
+
+  # Fetch `url` behind the SSRF guard, re-validating every redirect hop.
+  # Automatic redirect following is disabled (`follow_redirect: false`) so a
+  # public URL cannot 302 us into a private/metadata address — the classic SSRF
+  # bypass that a first-URL-only check would miss.
+  defp safe_get(_url, _timeout, redirects_left) when redirects_left < 0 do
+    {:error, :too_many_redirects}
+  end
+
+  defp safe_get(url, timeout, redirects_left) do
+    case UrlGuard.validate(url) do
+      :ok ->
+        case HTTPoison.get(url, [{"User-Agent", "Perplexica/1.0"}],
+               recv_timeout: timeout,
+               follow_redirect: false
+             ) do
+          {:ok, %{status_code: status, headers: headers}} when status in 300..399 ->
+            case redirect_location(headers, url) do
+              {:ok, next} -> safe_get(next, timeout, redirects_left - 1)
+              :error -> {:error, :bad_redirect}
+            end
+
+          other ->
+            other
+        end
+
+      {:error, reason} ->
+        # Log the requested host only — never the resolved internal address.
+        Logger.warning("[Scrape] SSRF guard blocked #{reason}: #{redact(url)}")
+        {:error, reason}
+    end
+  end
+
+  defp redirect_location(headers, base) do
+    case Enum.find(headers, fn {k, _} -> String.downcase(k) == "location" end) do
+      {_, location} -> {:ok, base |> URI.merge(location) |> URI.to_string()}
+      nil -> :error
+    end
+  end
+
+  defp redact(url) do
+    case URI.parse(url) do
+      %URI{scheme: scheme, host: host} when is_binary(host) -> "#{scheme}://#{host}"
+      _ -> "<unparseable>"
     end
   end
 
@@ -251,7 +305,12 @@ defmodule Perplexica.SearchSources.Brave do
   defp topics_config do
     %{
       "research" => %{
-        queries: ["scientific research", "academic breakthroughs", "quantum physics", "biotechnology"],
+        queries: [
+          "scientific research",
+          "academic breakthroughs",
+          "quantum physics",
+          "biotechnology"
+        ],
         links: ["phys.org", "sciencedaily.com", "nature.com"]
       },
       "analysis" => %{

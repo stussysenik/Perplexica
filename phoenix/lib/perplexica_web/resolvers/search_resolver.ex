@@ -1,6 +1,8 @@
 defmodule PerplexicaWeb.Resolvers.SearchResolver do
   @moduledoc "GraphQL resolvers for search operations."
 
+  require Logger
+
   alias Perplexica.Search.Supervisor, as: SearchSupervisor
   alias Perplexica.SearchSources.Brave
   alias Perplexica.{Repo, Chat, Message}
@@ -48,6 +50,8 @@ defmodule PerplexicaWeb.Resolvers.SearchResolver do
         |> Chat.changeset(%{title: title, sources: sources})
         |> Ecto.Changeset.put_change(:id, chat_id)
         |> Repo.insert()
+        |> log_persist_error("chat", chat_id)
+
       _exists ->
         :ok
     end
@@ -71,8 +75,23 @@ defmodule PerplexicaWeb.Resolvers.SearchResolver do
         status: "answering"
       })
       |> Repo.insert()
+      |> log_persist_error("message", message_id)
     end
   end
+
+  # Persistence is best-effort relative to serving the answer, but a failed
+  # insert must never be silent — a swallowed error here is exactly how "are we
+  # even saving searches?" becomes unanswerable. Logs and returns the result
+  # unchanged so control flow is untouched.
+  defp log_persist_error({:error, changeset}, kind, id) do
+    Logger.error(
+      "[Persist] failed to insert #{kind} #{inspect(id)}: #{inspect(changeset.errors)}"
+    )
+
+    {:error, changeset}
+  end
+
+  defp log_persist_error(result, _kind, _id), do: result
 
   def discover(_parent, %{topic: topic} = args, _context) do
     mode = if args[:mode] == "preview", do: :preview, else: :normal

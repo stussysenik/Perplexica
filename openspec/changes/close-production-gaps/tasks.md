@@ -6,28 +6,48 @@ should land before 3–4.
 
 ## Phase 0 — Containment & ground truth (do first)
 
-- [ ] 0.1 Take a Hetzner snapshot of the current server **before any change**
+- [x] 0.1 Take a Hetzner snapshot of the current server **before any change**
   - Verify: snapshot listed via `/v1/images?type=snapshot`
-- [ ] 0.2 Enable delete-protection on the production server
+  - DONE (2026-06-16): snapshot `image_id 398043640` created on server `131216547` (`byoa`),
+    desc "pre-hardening containment 2026-06-16". Status `creating` at record time — confirm
+    it reaches `available` (takes a few min for the 80 GB disk).
+- [x] 0.2 Enable delete-protection on the production server
   - Verify: server `protection.delete == true`
+  - DONE: `change_protection {delete:true, rebuild:true}` → verified `delete_protect: True`,
+    `rebuild_protect: True`. The box can no longer be accidentally deleted or reimaged.
 - [ ] 0.3 Create + attach a Hetzner Cloud Firewall (default-deny inbound; allow 80/443
   public, 22 + 8000 operator-only) `[blocked: OQ-4]`
   - Verify: from a non-operator network, 8000/5432 refuse; 80/443 succeed; SSH still
     reachable for the operator (test before relying on it)
-- [ ] 0.4 SSH in; read Coolify's injected `DATABASE_URL`; record which DB is canonical `[resolves OQ-1]`
+  - HELD: lockout risk — needs the operator's stable source IP (OQ-4) before applying.
+    Confirmed via API there are currently **0 firewalls** on the project.
+- [x] 0.4 SSH in; read Coolify's injected `DATABASE_URL`; record which DB is canonical `[resolves OQ-1]`
   - Verify: documented single `DATABASE_URL`
-- [ ] 0.5 Count rows in `chats`/`messages` on the live DB; run one real search and
+  - DONE: Perplexica = container `c6b5o3cz…` (`perplexica.stussysenik.com`, `MIX_ENV=prod`).
+    `DATABASE_URL=postgresql://perplexica:****@s1w2j8oxy05xdomwpyf8m2oc:5432/perplexica_prod`.
+    Host `s1w2j8oxy…` **is the `pgvector/pgvector:pg16` container** → **canonical DB is the
+    self-hosted local pgvector `perplexica_prod`, NOT Supabase.** Dual-DB ambiguity resolved.
+    Co-tenancy confirmed: second app container `jy82miu5…` = BYOA (`byoa.stussysenik.com`).
+- [~] 0.5 Count rows in `chats`/`messages` on the live DB; run one real search and
   confirm a new row appears `[satisfies REQ-DUR-002]`
   - Verify: row count increases after a search
-- [ ] 0.6 Confirm `AUTH_BYPASS` is unset in the prod environment `[satisfies REQ-SEC-004]`
+  - PARTIAL: schema intact (13 tables incl. chats/messages/users/search_sessions/audit_logs).
+    Counts: **8 chats / 10 messages**. ⚠️ most recent row `2026-06-11` (5 days stale) — either
+    no traffic since, or writes regressed. The active half (run a live search, watch the
+    count tick) was **held** (it spends LLM quota) — needs operator go.
+- [x] 0.6 Confirm `AUTH_BYPASS` is unset in the prod environment `[satisfies REQ-SEC-004]`
   - Verify: env inspection shows unset/false
+  - DONE: `printenv AUTH_BYPASS` in the prod Perplexica container returns empty → UNSET.
 
 ## Phase 1 — Security hardening
 
-- [ ] 1.1 Add SSRF guard to `phoenix/.../actions/scrape_url.ex`: scheme allowlist
+- [x] 1.1 Add SSRF guard to `phoenix/.../actions/scrape_url.ex`: scheme allowlist
   (http/https) + resolve host + reject RFC-1918/loopback/link-local/ULA/`169.254.169.254`
   `[satisfies REQ-SEC-003]`
   - Verify: unit tests for blocked (private/metadata/`file://`) and allowed (public) URLs
+  - DONE: new `Perplexica.Security.UrlGuard` (resolve-then-classify, IPv4+IPv6, IPv4-mapped);
+    `Brave.scrape_url` now validates **every redirect hop** (`follow_redirect: false`) to
+    close the 302→internal bypass; 12 unit tests green (`test/perplexica/security/url_guard_test.exs`)
 - [ ] 1.2 Restrict Coolify admin to operator (firewall rule from 0.3 + confirm no
   plain-HTTP public path) `[satisfies REQ-SEC-002]`
   - Verify: public HTTP request to :8000 not served
@@ -37,9 +57,11 @@ should land before 3–4.
 - [ ] 1.4 Rotate exposed secrets in order: Spaceship DNS → Supabase password → Hetzner
   token; update Coolify env + local `.env.local` `[satisfies REQ-SEC-005]`
   - Verify: app still boots with new creds; old creds revoked
-- [ ] 1.5 Confirm `ensure_chat_exists`/`ensure_message_exists` insert failures are not
+- [x] 1.5 Confirm `ensure_chat_exists`/`ensure_message_exists` insert failures are not
   silently swallowed (log on error tuple)
   - Verify: forced insert error produces a log line
+  - DONE: both inserts now pipe through `log_persist_error/3` in `search_resolver.ex`,
+    which logs `Logger.error` on `{:error, changeset}` and passes the result through unchanged
 
 ## Phase 2 — Durability & single source of truth
 

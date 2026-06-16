@@ -70,10 +70,15 @@ while the full roadmap ("cover all that") is captured in one place.
 
 ## Open questions (resolve during Phase 0 / before apply)
 
-- **OQ-1 (DB):** Which DB does prod actually write to today, and how many rows exist?
-  → answered by SSH'ing in and inspecting Coolify's injected `DATABASE_URL` + counts.
-- **OQ-2 (DB target):** After OQ-1, standardize on self-hosted pgvector (recommended)
-  or Supabase? Trade-off: owned/private/no-sleep vs managed/zero-ops/limited backups.
+- **OQ-1 (DB): RESOLVED (2026-06-16).** Prod writes to the **self-hosted local
+  `pgvector/pgvector:pg16` container**, database `perplexica_prod`
+  (`DATABASE_URL=…@s1w2j8oxy…:5432/perplexica_prod`). **Not Supabase.** 8 chats / 10
+  messages exist (most recent row 2026-06-11 — confirm current writes with a live search).
+- **OQ-2 (DB target): de-risked → pgvector.** Since pgvector is *already* the working
+  canonical store, "standardize on pgvector" reduces to **removing the Supabase
+  references from config/docs** (`SUPABASE_CONNECTION_STRING` etc. still linger in
+  `.env.local`/`INFRASTRUCTURE.md`) and adding backups — not a data migration. Final
+  operator confirmation still wanted before deleting the Supabase creds.
 - **OQ-3 (split):** Which service moves to the new project — Perplexica or BYOA? And is
   the ~€8/mo second server approved?
 - **OQ-4 (SSH source):** Operator's stable public IP for firewall rules, or keep 22
