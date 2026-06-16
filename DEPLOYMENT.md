@@ -67,7 +67,7 @@ This is the architecture described in `PROGRESS.md`:
 
 ### 3. Multi-Service Cloud (Railway + Vercel)
 
-The root directory contains a `Dockerfile` and `docker-compose.yml` for the legacy Next.js version of Perplexica.
+The root `Dockerfile` and `docker-compose.yml` are the **live** orchestrators for the current Phoenix (Elixir) + RedwoodJS (Yarn 4) stack — the `Dockerfile` builds the Redwood web bundle and the Phoenix release. (The earlier `rest-express`/Next.js generation has been removed; do not treat these files as legacy.)
 
 ```bash
 docker compose up -d
