@@ -1,5 +1,12 @@
 # Proposal: Rewrite to Full-Stack Resilient Architecture
 
+> **STATUS: ARCHIVED — shipped & live (2026-06-16).** This rewrite *is* the running
+> stack: RedwoodJS + Phoenix + PostgreSQL, deployed on Hetzner at
+> `perplexica.stussysenik.com`. The Railway/Vercel hosting target in this proposal was
+> superseded by the Hetzner migration; production hardening continues under the active
+> `close-production-gaps` change. The task checkboxes below were never maintained during
+> implementation — they do **not** reflect remaining work; the work is deployed.
+
 ## Change ID
 `rewrite-fullstack-resilient`
 

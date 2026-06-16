@@ -9,14 +9,24 @@ openspec/
   AGENTS.md           — This file (agent instructions)
   specs/              — Capability specifications (future)
   changes/
-    <change-id>/
-      proposal.md     — Change summary, motivation, scope
+    README.md         — Change board: source of truth for task status (read this first)
+    <change-id>/      — OPEN changes only (active or deliberately deferred)
+      proposal.md     — Change summary, motivation, scope (carries a STATUS: banner)
       design.md       — Architecture, trade-offs, diagrams
       tasks.md        — Ordered implementation work items
       specs/
         <capability>/
           spec.md     — Requirements with scenarios
+    archive/          — CLOSED changes (shipped & live, or retired/obsolete)
+      <change-id>/    — same layout; STATUS: banner explains why it closed
 ```
+
+### Lifecycle
+
+A change lives at `changes/<id>/` while open. When it ships (or is retired as
+obsolete), `git mv` it to `changes/archive/<id>/`, add a `STATUS:` banner to its
+`proposal.md`, and update `changes/README.md`. Folder location is the lifecycle signal;
+`tasks.md` checkbox counts are not authoritative for older changes.
 
 ### Spec Format
 

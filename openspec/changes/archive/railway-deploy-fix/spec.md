@@ -1,5 +1,9 @@
 # Spec: Railway Deployment Fix & Verification
 
+> **STATUS: RETIRED — obsolete (Railway-era).** Production no longer runs on Railway; it
+> migrated to Hetzner + Coolify (`perplexica.stussysenik.com`). This change has no
+> proposal.md and its objective no longer applies. Kept for history; do not resume.
+
 ## Objective
 Fix the current 404 Not Found on the Railway production URL by triggering a successful build and deployment. Since the standard Railway CLI logs are often empty during the build/deploy transition, we will build a custom monitor that tracks the deployment lifecycle and tails logs specifically for the active build.
 

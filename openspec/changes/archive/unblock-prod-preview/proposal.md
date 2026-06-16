@@ -1,5 +1,12 @@
 # Unblock Prod Preview
 
+> **STATUS: RETIRED — obsolete (Railway-era).** This change targeted the Railway
+> deployment (`perplexica-production-41f5.up.railway.app`, `railway variables`). Production
+> has since migrated to Hetzner + Coolify (`perplexica.stussysenik.com`), so every open
+> task here points at infrastructure that no longer exists. The two real fixes it shipped
+> — removing the untracked `Chess.tsx` dynamic import and the `AUTH_BYPASS` preview flag —
+> already landed. Kept for history; do not resume.
+
 ## Why
 
 Production (`https://perplexica-production-41f5.up.railway.app/`) is stuck. Two independent bugs surfaced in one session and block the operator (`stussysenik`) from seeing the app:

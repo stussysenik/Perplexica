@@ -1,5 +1,11 @@
 # Proposal: Add Local-First Sync (The Sovereign Record)
 
+> **STATUS: DEFERRED — exploratory, not active.** The most speculative of the three
+> deferred threads from `close-production-gaps`. This change is weighted toward an
+> architecture decision (ElectricSQL vs Automerge) that is **not yet made**. No
+> implementation has started (0/17). Do not begin until the architecture choice is
+> resolved and prioritized.
+
 ## Change ID
 `add-local-first-sync`
 

@@ -1,5 +1,10 @@
 # Kill Stale PWA Service Worker
 
+> **STATUS: ARCHIVED — kill-switch shipped.** The kill-switch service worker exists at
+> `redwood/web/public/sw.js`, which unregisters the stale SW and clears its caches. The
+> 0/37 checkbox count reflects unticked verification/cleanup steps, not missing work; the
+> blocking bug (dead SW hijacking post-OAuth asset fetches) is resolved in the live app.
+
 ## Why
 
 After the GitHub OAuth callback, Phoenix redirects the browser to `http://localhost:8910/` (Redwood dev). The app then fails to boot with a cascade of console errors:

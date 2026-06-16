@@ -1,5 +1,11 @@
 # Restore Search Context and Progress
 
+> **STATUS: ARCHIVED — shipped & live (2026-06-16).** Slices 1–6 (visual polish, inline
+> follow-ups, chat lifecycle bookmark/archive/trash, Library tabs, per-step progress +
+> failing-step attribution) are deployed. The remaining open boxes are two explicitly
+> deferred niceties (StepTimeline drawer; message→chat bookmark migration) and stale
+> "Railway auto-deploys" deploy/verify steps — production now ships via Hetzner.
+
 ## Why
 
 After getting past the stale-service-worker bug, the user surfaced four gaps that together prevent the app from being used as a real research tool:

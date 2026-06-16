@@ -1,5 +1,10 @@
 # Proposal: Add a DSPy Answer-Synthesis Service
 
+> **STATUS: DEFERRED — future work, not active.** Intentionally deferred from
+> `close-production-gaps` (Decision #8). The current in-process `Perplexica.AI` answer
+> path works and stays the source of truth until this is picked up. No implementation has
+> started (0/16). Do not begin without an explicit decision to prioritize it.
+
 ## Change ID
 `add-dspy-answer-service`
 
