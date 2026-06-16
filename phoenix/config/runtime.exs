@@ -132,6 +132,14 @@ if config_env() == :prod do
 
   config :perplexica, PerplexicaWeb.Endpoint,
     url: [host: host, port: 443, scheme: "https"],
+    # Headless backend: the Absinthe subscription WebSocket is the secondary
+    # search transport (SSE is primary, both served from the :api/:api_sse
+    # pipelines under the same CORS policy). Phoenix's default `check_origin`
+    # only allows the endpoint's own host, which would reject a cross-origin
+    # frontend's WS even though its GraphQL/SSE calls pass CORS. Aligning
+    # `check_origin` with `cors_origins` keeps the WS transport consistent with
+    # the HTTP CORS allowlist. Same-origin prod still passes (host is in list).
+    check_origin: cors_origins,
     http: [
       # Enable IPv6 and bind on all interfaces.
       # Set it to  {0, 0, 0, 0, 0, 0, 0, 1} for local network only access.
