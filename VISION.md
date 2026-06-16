@@ -103,6 +103,12 @@ We follow California's digital accessibility standards:
 3. **Sub-second navigation** — Every page loads in one click, no double-refresh
 4. **Transparent loading** — Time-quantified feedback, no silent spinners
 5. **Test-verified** — Every navigation flow has a Playwright test
+6. **Sovereign record** — The research record (query → cited answer → sources, saved
+   and replayable) *is* the product. It must be durable, portable, and exportable, and
+   never captive to one backend, host, or framework. The techstack (Phoenix, Redwood,
+   the AI providers) is a replaceable renderer of the record — which is precisely what
+   makes a mobile client, or any future surface, a matter of reading the same record
+   rather than a rewrite.
 
 ## Data Persistence Vision
 
