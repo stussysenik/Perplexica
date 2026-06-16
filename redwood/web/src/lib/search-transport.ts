@@ -55,6 +55,7 @@ export function subscribeToSearchTransport(
   let pollingActive = false
   let pollingCancel: AbortController | null = null
   let transportComplete = false
+  let activationId = 0
 
   const actor = createActor(connectionMachine)
   actor.start()
@@ -66,7 +67,7 @@ export function subscribeToSearchTransport(
     const ctx = snapshot.context
     const state = snapshot.value as string
 
-    if (state === 'connecting' || state === 'subscribing') {
+    if (state === 'connecting') {
       activateTransport(ctx.transport as TransportType)
     }
 
@@ -77,16 +78,18 @@ export function subscribeToSearchTransport(
   })
 
   function activateTransport(t: TransportType) {
+    const id = ++activationId
+
     // Clean up previous transport
     if (currentAbort) currentAbort()
     if (wsUnsubscribe) wsUnsubscribe()
 
     switch (t) {
       case 'sse':
-        activateSse()
+        activateSse(id)
         break
       case 'websocket':
-        activateWebSocket()
+        activateWebSocket(id)
         break
       case 'polling':
         activatePolling()
@@ -94,7 +97,7 @@ export function subscribeToSearchTransport(
     }
   }
 
-  function activateSse() {
+  function activateSse(id: number) {
     const sseUrl = phoenixBaseUrl
       ? `${phoenixBaseUrl}/api/sse/search/${sessionId}`
       : `/api/sse/search/${sessionId}`
@@ -135,13 +138,18 @@ export function subscribeToSearchTransport(
 
     // After brief delay, if connection is still active, mark as connected
     setTimeout(() => {
-      if (activeTransport() === 'sse') {
+      const snapshot = actor.getSnapshot()
+      if (
+        activationId === id &&
+        snapshot.value === 'connecting' &&
+        activeTransport() === 'sse'
+      ) {
         actor.send({ type: 'TRANSPORT_CONNECTED' })
       }
     }, 1000)
   }
 
-  function activateWebSocket() {
+  function activateWebSocket(id: number) {
     wsUnsubscribe = subscribeToSearch(sessionId, {
       onEvent: (event: SearchEvent) => {
         actor.send({ type: 'SUBSCRIPTION_CONFIRMED' })
@@ -164,7 +172,12 @@ export function subscribeToSearchTransport(
     })
 
     setTimeout(() => {
-      if (activeTransport() === 'websocket') {
+      const snapshot = actor.getSnapshot()
+      if (
+        activationId === id &&
+        snapshot.value === 'connecting' &&
+        activeTransport() === 'websocket'
+      ) {
         actor.send({ type: 'TRANSPORT_CONNECTED' })
       }
     }, 1000)
@@ -248,6 +261,7 @@ export function subscribeToSearchTransport(
   }
 
   function cleanup() {
+    activationId++
     if (currentAbort) {
       currentAbort()
       currentAbort = null

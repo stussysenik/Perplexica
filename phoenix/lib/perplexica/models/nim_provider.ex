@@ -43,7 +43,10 @@ defmodule Perplexica.Models.NimProvider do
       %{key: "meta/llama-3.3-70b-instruct", name: "Llama 3.3 70B"},
       %{key: "moonshotai/kimi-k2.6", name: "Kimi K2.6"},
       %{key: "deepseek-ai/deepseek-v4-flash", name: "DeepSeek V4 Flash"},
-      %{key: "qwen/qwen3.5-397b-a17b", name: "Qwen 3.5 397B"},
+      # `qwen/qwen3.5-397b-a17b` (and the whole qwen family) stopped serving on
+      # this NIM key 2026-06-16 — listed but hangs to timeout. Replaced with the
+      # DeepSeek V4 Pro flagship, which is the live answer model (see AI module).
+      %{key: "deepseek-ai/deepseek-v4-pro", name: "DeepSeek V4 Pro"},
       %{key: "openai/gpt-oss-120b", name: "GPT-OSS 120B"},
       %{key: "mistralai/mistral-large-3-675b-instruct-2512", name: "Mistral Large 3 675B"}
     ]

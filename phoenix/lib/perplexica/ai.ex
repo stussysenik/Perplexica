@@ -29,14 +29,23 @@ defmodule Perplexica.AI do
   for the flagship.
   """
 
-  # Verified returning real completions against the live NIM catalog 2026-06.
-  # `qwen/qwen3.5-397b-a17b` is a 397B-parameter MoE (≈17B active) — top answer
-  # quality at acceptable latency for a one-shot synthesis call.
-  @answer_model "qwen/qwen3.5-397b-a17b"
+  # Verified returning real completions against the live NIM catalog 2026-06-16.
+  # `deepseek-ai/deepseek-v4-pro` is a flagship MoE — top answer quality at
+  # sub-second synthesis latency on this NIM key.
+  #
+  # NOTE: the previous answer model `qwen/qwen3.5-397b-a17b` — and every other
+  # qwen variant — stopped serving on this key on 2026-06-16. They are still
+  # listed in `/v1/models` but every `/chat/completions` call hangs to the 120s
+  # timeout, so the search would run and then fail with "Failed to generate
+  # answer". The whole qwen family is down; this swap was mandatory.
+  @answer_model "deepseek-ai/deepseek-v4-pro"
 
   # Documented fallback if the flagship is ever pulled from the catalog. Kept
   # in lock-step with NimProvider's @default_model so a single EOL can't take
-  # answer generation down again (the 2026-05 kimi-k2 incident).
+  # answer generation down again (the 2026-05 kimi-k2 incident, and the
+  # 2026-06 qwen hang). Now actually wired into the answer step in
+  # `SearchSession`: when the primary errors or times out, generation retries
+  # once on this model before surfacing an error to the user.
   @answer_fallback_model "meta/llama-3.3-70b-instruct"
 
   @answer_max_tokens 4096
@@ -55,6 +64,19 @@ defmodule Perplexica.AI do
   def answer_opts(mode \\ nil) do
     %{
       model: answer_model(mode),
+      max_tokens: @answer_max_tokens,
+      temperature: @answer_temperature
+    }
+  end
+
+  @doc """
+  Generation options for the answer step's fallback model — identical to
+  `answer_opts/1` but pinned to `answer_fallback_model/0`. Used by the search
+  session when the primary answer model errors or times out.
+  """
+  def answer_fallback_opts do
+    %{
+      model: answer_fallback_model(),
       max_tokens: @answer_max_tokens,
       temperature: @answer_temperature
     }

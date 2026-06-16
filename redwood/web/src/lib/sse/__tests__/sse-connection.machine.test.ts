@@ -4,7 +4,7 @@
  * Tests the full lifecycle: connect → subscribe → receive → error → retry → disconnect.
  */
 
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { createActor } from 'xstate'
 import { connectionMachine, type ConnectionContext } from '../sse-connection.machine'
 
@@ -18,7 +18,31 @@ function expectState(actor: ReturnType<typeof createMachine>, state: string) {
   expect(actor.getSnapshot().value).toBe(state)
 }
 
+/**
+ * Drive one full failure cycle deterministically:
+ * connecting → TRANSPORT_FAILED → deciding → retrying → (flush backoff) → connecting.
+ *
+ * Reads the current backoffMs and advances fake time by exactly that amount so the
+ * `retrying.after.backoffDelay` delayed transition fires and the machine re-enters
+ * `connecting` on the (possibly downgraded) transport. If the failure pushed the
+ * machine to `disconnected` instead, there is no pending timer and the advance is a
+ * harmless no-op.
+ */
+function failOnce(actor: ReturnType<typeof createMachine>) {
+  actor.send({ type: 'TRANSPORT_FAILED', error: 'boom' })
+  vi.advanceTimersByTime(actor.getSnapshot().context.backoffMs)
+}
+
 describe('connectionMachine', () => {
+  // Fake timers let us flush the machine's `after` backoff delays synchronously.
+  beforeEach(() => {
+    vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
   describe('initial state', () => {
     it('starts in disconnected state', () => {
       const actor = createMachine()
@@ -73,41 +97,69 @@ describe('connectionMachine', () => {
       // For the test, we check the deciding state first
     })
 
-    it('gives up after max attempts', () => {
+    it('gives up and disconnects once max attempts are exhausted', () => {
       const actor = createMachine()
       actor.send({ type: 'CONNECT', sessionId: 'abc', endpoint: 'http://x' })
 
-      // Exhaust all attempts
+      // maxAttempts is 10. Each failure cycles connecting → deciding → retrying →
+      // connecting (incrementing attemptCount). Once attemptCount reaches the cap and
+      // no further downgrade is available, `deciding` falls through to `disconnected`.
       for (let i = 0; i < 10; i++) {
-        // Force attempts by sending failures
-        // After each failure, the machine is in deciding → retrying
-        // We need to advance past the delay
+        failOnce(actor)
       }
 
-      // After max attempts, should go to disconnected
-      // This test needs more sophisticated timing handling
+      expectState(actor, 'disconnected')
+      // Entering `disconnected` runs `resetConnection`, clearing transport/attempts.
+      expect(actor.getSnapshot().context.attemptCount).toBe(0)
+      expect(actor.getSnapshot().context.transport).toBe('sse')
     })
   })
 
   describe('transport upgrade/downgrade', () => {
-    it('downgrades transport after 3 consecutive failures', () => {
+    it('downgrades sse → websocket after exactly 3 consecutive failures', () => {
       const actor = createMachine()
-      expect(actor.getSnapshot().context.transport).toBe('sse')
-
       actor.send({ type: 'CONNECT', sessionId: 'abc', endpoint: 'http://x' })
       expect(actor.getSnapshot().context.transport).toBe('sse')
 
-      // Fail 3 times on SSE (accumulate failuresOnCurrentTransport = 3)
-      // The machine needs to cycle through connecting → fail → deciding → retrying → connecting
-      // This requires the delay to resolve. In a real test we'd need to handle async transitions.
-      // For now, verify the downgrade function logic.
+      failOnce(actor)
+      expect(actor.getSnapshot().context.transport).toBe('sse')
+      expect(actor.getSnapshot().context.failuresOnCurrentTransport).toBe(1)
+
+      failOnce(actor)
+      expect(actor.getSnapshot().context.transport).toBe('sse')
+      expect(actor.getSnapshot().context.failuresOnCurrentTransport).toBe(2)
+
+      // The 3rd failure crosses the shouldDowngrade threshold (>= 3).
+      failOnce(actor)
+      expect(actor.getSnapshot().context.transport).toBe('websocket')
+      // Regression guard: the per-transport failure counter must reset on downgrade,
+      // otherwise the next transport would downgrade again on its very first failure.
+      expect(actor.getSnapshot().context.failuresOnCurrentTransport).toBe(0)
     })
 
-    it('downgrade chain: sse → websocket → polling → polling', () => {
+    it('downgrade chain: sse → websocket → polling, then stays on polling', () => {
       const actor = createMachine()
+      actor.send({ type: 'CONNECT', sessionId: 'abc', endpoint: 'http://x' })
       expect(actor.getSnapshot().context.transport).toBe('sse')
 
-      // TODO: Full async state machine test with delay handling
+      // 3 failures: sse → websocket
+      failOnce(actor)
+      failOnce(actor)
+      failOnce(actor)
+      expect(actor.getSnapshot().context.transport).toBe('websocket')
+
+      // 3 more failures: websocket → polling
+      failOnce(actor)
+      failOnce(actor)
+      failOnce(actor)
+      expect(actor.getSnapshot().context.transport).toBe('polling')
+
+      // polling is the terminal fallback — further failures keep it on polling
+      // (downgradeTransport maps polling → polling) and reset the counter each cycle.
+      failOnce(actor)
+      failOnce(actor)
+      failOnce(actor)
+      expect(actor.getSnapshot().context.transport).toBe('polling')
     })
   })
 

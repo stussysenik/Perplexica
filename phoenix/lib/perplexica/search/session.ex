@@ -268,8 +268,8 @@ defmodule Perplexica.Search.Session do
 
     # Generate the answer (non-streaming for reliability). Options — including
     # the max-quality model — come from the centralized Perplexica.AI layer.
-    case Registry.chat_completion(messages, AI.answer_opts()) do
-      {:ok, _key, {:ok, response}} ->
+    case generate_answer(messages) do
+      {:ok, response} ->
         answer_text = response.content || ""
 
         # Emit the text block with full answer
@@ -284,10 +284,35 @@ defmodule Perplexica.Search.Session do
         publish(session_id, :message_end)
         update_message_status(state, "completed")
 
-      {:error, _key, {:error, reason}} ->
+      {:error, reason} ->
         Logger.warning("[SearchSession] Answer generation failed: #{inspect(reason)}")
         publish(session_id, {:error, "Failed to generate answer"})
         update_message_status(state, "error")
+    end
+  end
+
+  # Generate the answer on the primary model, falling back once to the
+  # documented fallback model if the primary errors or times out. A hardcoded
+  # answer model can be pulled from the NIM catalog at any time (the 2026-05
+  # kimi-k2 EOL and the 2026-06 qwen hang both did exactly this); this retry is
+  # the safety net `Perplexica.AI` documents. Returns `{:ok, response}` or
+  # `{:error, reason}`.
+  defp generate_answer(messages) do
+    case Registry.chat_completion(messages, AI.answer_opts()) do
+      {:ok, _key, {:ok, response}} ->
+        {:ok, response}
+
+      primary_error ->
+        Logger.warning(
+          "[SearchSession] primary answer model failed (#{inspect(primary_error)}); " <>
+            "retrying on fallback #{AI.answer_fallback_model()}"
+        )
+
+        case Registry.chat_completion(messages, AI.answer_fallback_opts()) do
+          {:ok, _key, {:ok, response}} -> {:ok, response}
+          {:error, _key, {:error, reason}} -> {:error, reason}
+          other -> {:error, other}
+        end
     end
   end
 

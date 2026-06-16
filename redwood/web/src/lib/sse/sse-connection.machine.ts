@@ -82,6 +82,7 @@ export const connectionMachine = setup({
     }),
     downgradeTransport: assign({
       transport: ({ context }) => downgradeTransport(context.transport),
+      failuresOnCurrentTransport: () => 0,
     }),
     resetConnection: assign({
       sessionId: () => null,
